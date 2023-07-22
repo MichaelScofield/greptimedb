@@ -476,7 +476,6 @@ pub async fn setup_test_prom_app_with_frontend(
     store_type: StorageType,
     name: &str,
 ) -> (Router, TestGuard) {
-    std::env::set_var("TZ", "UTC");
     let (opts, guard) = create_tmp_dir_and_datanode_opts(store_type, name);
     let (instance, heartbeat) = Instance::with_mock_meta_client(&opts).await.unwrap();
     let frontend = FeInstance::try_new_standalone(instance.clone())

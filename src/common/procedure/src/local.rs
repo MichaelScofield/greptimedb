@@ -887,7 +887,7 @@ mod tests {
         let mut watcher = manager.procedure_watcher(procedure_id).unwrap();
         watcher.changed().await.unwrap();
         manager.start().unwrap();
-        tokio::time::sleep(Duration::from_millis(10)).await;
+        tokio::time::sleep(Duration::from_secs(1)).await;
         assert!(manager
             .procedure_state(procedure_id)
             .await

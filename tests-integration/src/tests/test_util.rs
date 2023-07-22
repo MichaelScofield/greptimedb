@@ -110,8 +110,29 @@ pub(crate) async fn check_unordered_output_stream(output: Output, expected: &str
     assert_eq!(pretty_print, expected);
 }
 
-pub fn get_data_dir(path: &str) -> PathBuf {
+pub fn find_testing_resource(path: &str) -> String {
     let dir = env!("CARGO_MANIFEST_DIR");
 
-    PathBuf::from(dir).join(path)
+    let mut buf = PathBuf::from(dir);
+    path.split('/').for_each(|x| {
+        // Manually "canonicalize" to avoid annoy Windows specific "\\?" path prefix.
+        if x == ".." {
+            buf.pop();
+        } else if x != "." {
+            buf = buf.join(x);
+        }
+    });
+
+    let buf = buf.display().to_string();
+
+    // We need unix style path even in the Windows, because the path is used in object-store, must
+    // be delimited with '/'. Inside the object-store, it will be converted to file system needed
+    // path in the end.
+    let buf = buf.replace('\\', "/");
+
+    // Prepend a '/' to indicate it's a file system path when parsed as object store url in Windows.
+    #[cfg(windows)]
+    let buf = format!("/{buf}");
+
+    buf
 }

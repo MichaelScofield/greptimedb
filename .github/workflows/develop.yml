@@ -115,7 +115,10 @@ jobs:
   sqlness:
     name: Sqlness Test
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
@@ -127,25 +130,14 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
-      - name: Run etcd
-        run: |
-          ETCD_VER=v3.5.7
-          DOWNLOAD_URL=https://github.com/etcd-io/etcd/releases/download
-          curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-          mkdir -p /tmp/etcd-download
-          tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp/etcd-download --strip-components=1
-          rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-
-          sudo cp -a /tmp/etcd-download/etcd* /usr/local/bin/
-          nohup etcd >/tmp/etcd.log 2>&1 &
       - name: Run sqlness
-        run: cargo sqlness && ls /tmp
+        run: cargo sqlness
       - name: Upload sqlness logs
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: sqlness-logs
-          path: /tmp/greptime-*.log
+          path: ${{ runner.temp }}/greptime-*.log
           retention-days: 3
 
   fmt:
@@ -188,7 +180,10 @@ jobs:
 
   coverage:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3

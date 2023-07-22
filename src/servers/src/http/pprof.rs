@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #[cfg(feature = "pprof")]
+mod nix;
+
+#[cfg(feature = "pprof")]
 pub mod handler {
     use std::num::NonZeroI32;
     use std::time::Duration;
@@ -20,12 +23,12 @@ pub mod handler {
     use axum::extract::Query;
     use axum::http::StatusCode;
     use axum::response::IntoResponse;
-    use common_pprof::Profiling;
     use common_telemetry::logging;
     use schemars::JsonSchema;
     use serde::{Deserialize, Serialize};
     use snafu::ResultExt;
 
+    use super::nix::Profiling;
     use crate::error::{DumpPprofSnafu, Result};
 
     /// Output format.

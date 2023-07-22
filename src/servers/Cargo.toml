@@ -7,7 +7,7 @@ license.workspace = true
 [features]
 dashboard = []
 mem-prof = ["dep:common-mem-prof"]
-pprof = ["dep:common-pprof"]
+pprof = ["dep:pprof"]
 
 [dependencies]
 aide = { version = "0.9", features = ["axum"] }
@@ -26,7 +26,6 @@ common-error = { path = "../common/error" }
 common-grpc = { path = "../common/grpc" }
 common-grpc-expr = { path = "../common/grpc-expr" }
 common-mem-prof = { path = "../common/mem-prof", optional = true }
-common-pprof = { path = "../common/pprof", optional = true }
 common-query = { path = "../common/query" }
 common-recordbatch = { path = "../common/recordbatch" }
 common-runtime = { path = "../common/runtime" }
@@ -61,6 +60,11 @@ parking_lot = "0.12"
 pgwire = "0.15"
 pin-project = "1.0"
 postgres-types = { version = "0.2", features = ["with-chrono-0_4"] }
+pprof = { version = "0.11", features = [
+    "flamegraph",
+    "prost-codec",
+    "protobuf",
+], optional = true }
 promql-parser = "0.1.1"
 prost.workspace = true
 query = { path = "../query" }
@@ -80,7 +84,6 @@ snap = "1"
 sql = { path = "../sql" }
 strum = { version = "0.24", features = ["derive"] }
 table = { path = "../table" }
-tikv-jemalloc-ctl = { version = "0.5", features = ["use_std"] }
 tokio-rustls = "0.24"
 tokio-stream = { version = "0.1", features = ["net"] }
 tokio.workspace = true
@@ -89,6 +92,8 @@ tonic-reflection = "0.9"
 tower = { version = "0.4", features = ["full"] }
 tower-http = { version = "0.3", features = ["full"] }
 
+[target.'cfg(not(windows))'.dependencies]
+tikv-jemalloc-ctl = { version = "0.5", features = ["use_std"] }
 
 [dev-dependencies]
 axum-test-helper = { git = "https://github.com/sunng87/axum-test-helper.git", branch = "patch-1" }

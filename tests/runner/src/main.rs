@@ -34,6 +34,6 @@ async fn main() {
         .follow_links(true)
         .build()
         .unwrap();
-    let runner = Runner::new(config, Env {});
+    let runner = Runner::new(config, Env::new(std::env::temp_dir()));
     runner.run().await.unwrap();
 }

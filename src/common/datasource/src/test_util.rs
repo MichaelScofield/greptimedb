@@ -35,7 +35,12 @@ pub fn get_data_dir(path: &str) -> PathBuf {
     // https://doc.rust-lang.org/cargo/reference/environment-variables.html
     let dir = env!("CARGO_MANIFEST_DIR");
 
-    PathBuf::from(dir).join(path)
+    // We need unix style path even in the Windows, because the path is used in object-store, must
+    // be delimited with '/'. Inside the object-store, it will be converted to file system needed
+    // path in the end.
+    let dir = dir.replace('\\', "/");
+
+    PathBuf::from(format!("{dir}/{path}"))
 }
 
 pub fn format_schema(schema: Schema) -> Vec<String> {
@@ -124,12 +129,7 @@ pub async fn setup_stream_to_json_test(origin_path: &str, threshold: impl Fn(usi
 
     let written = tmp_store.read(&output_path).await.unwrap();
     let origin = store.read(origin_path).await.unwrap();
-
-    // ignores `\n`
-    assert_eq!(
-        String::from_utf8_lossy(&written).trim_end_matches('\n'),
-        String::from_utf8_lossy(&origin).trim_end_matches('\n'),
-    )
+    assert_eq_lines(written, origin);
 }
 
 pub async fn setup_stream_to_csv_test(origin_path: &str, threshold: impl Fn(usize) -> usize) {
@@ -166,10 +166,19 @@ pub async fn setup_stream_to_csv_test(origin_path: &str, threshold: impl Fn(usiz
 
     let written = tmp_store.read(&output_path).await.unwrap();
     let origin = store.read(origin_path).await.unwrap();
+    assert_eq_lines(written, origin);
+}
 
-    // ignores `\n`
+// Ignore the CRLF difference across operating systems.
+fn assert_eq_lines(written: Vec<u8>, origin: Vec<u8>) {
     assert_eq!(
-        String::from_utf8_lossy(&written).trim_end_matches('\n'),
-        String::from_utf8_lossy(&origin).trim_end_matches('\n'),
+        String::from_utf8(written)
+            .unwrap()
+            .lines()
+            .collect::<Vec<_>>(),
+        String::from_utf8(origin)
+            .unwrap()
+            .lines()
+            .collect::<Vec<_>>(),
     )
 }

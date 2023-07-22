@@ -203,7 +203,9 @@ async fn test_orc_opener() {
     let schema = Arc::new(schema);
 
     let orc_opener = OrcOpener::new(store.clone(), schema.clone(), None);
-    let path = &test_util::get_data_dir("/test.orc").display().to_string();
+    let path = &test_util::get_data_dir("tests/orc/test.orc")
+        .display()
+        .to_string();
 
     let tests = [
         Test {

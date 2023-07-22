@@ -193,7 +193,9 @@ impl QueryLanguageParser {
 
 fn max_system_timestamp() -> SystemTime {
     SystemTime::UNIX_EPOCH
-        .checked_add(Duration::from_secs(std::i64::MAX as u64))
+        // About 1000 years (year 2970) from unix epoch, which is "max" enough.
+        // Can't add too much seconds, Windows will easily overflow.
+        .checked_add(Duration::from_secs(1000 * 365 * 24 * 3600))
         .unwrap()
 }
 
@@ -331,6 +333,7 @@ mod test {
             step: "1d".to_string(),
         };
 
+        #[cfg(not(windows))]
         let expected = String::from(
             "\
             Promql(EvalStmt { \
@@ -345,6 +348,27 @@ mod test {
                     offset: None, at: None }), \
                 start: SystemTime { tv_sec: 1644772440, tv_nsec: 0 }, \
                 end: SystemTime { tv_sec: 1676308440, tv_nsec: 0 }, \
+                interval: 86400s, \
+                lookback_delta: 300s \
+            })",
+        );
+
+        // Windows has different debug output for SystemTime.
+        #[cfg(windows)]
+        let expected = String::from(
+            "\
+            Promql(EvalStmt { \
+                expr: VectorSelector(VectorSelector { \
+                    name: Some(\"http_request\"), \
+                    matchers: Matchers { \
+                        matchers: {Matcher { \
+                            op: Equal, \
+                            name: \"__name__\", \
+                            value: \"http_request\" \
+                    }} }, \
+                    offset: None, at: None }), \
+                start: SystemTime { intervals: 132892460400000000 }, \
+                end: SystemTime { intervals: 133207820400000000 }, \
                 interval: 86400s, \
                 lookback_delta: 300s \
             })",
