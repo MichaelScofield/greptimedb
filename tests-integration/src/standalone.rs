@@ -124,7 +124,10 @@ impl GreptimeDbStandaloneBuilder {
         let table_metadata_manager = Arc::new(TableMetadataManager::new(kv_backend.clone()));
         table_metadata_manager.init().await.unwrap();
 
-        let datanode_manager = Arc::new(StandaloneDatanodeManager(datanode.region_server()));
+        let datanode_manager = Arc::new(StandaloneDatanodeManager::new(
+            datanode.region_server(),
+            None,
+        ));
 
         let table_id_sequence = Arc::new(
             SequenceBuilder::new("table_id", kv_backend.clone())
@@ -208,6 +211,10 @@ impl GreptimeDbStandaloneBuilder {
             datanode: opts,
             logging: LoggingOptions::default(),
             wal_meta,
+            metasrv: None,
+            region_server_service: None,
+            pair_node: None,
+            table_id_range: None,
         };
 
         self.build_with(kv_backend, procedure_manager, guard, mix_options)

@@ -14,15 +14,18 @@
 
 use clap::ArgMatches;
 use common_config::KvBackendConfig;
+use common_meta::peer::Peer;
 use common_telemetry::logging::{LoggingOptions, TracingOptions};
 use common_wal::config::MetaSrvWalConfig;
 use config::{Config, Environment, File, FileFormat};
 use datanode::config::{DatanodeOptions, ProcedureConfig};
 use frontend::error::{Result as FeResult, TomlFormatSnafu};
 use frontend::frontend::{FrontendOptions, TomlSerializable};
+use meta_client::MetaClientOptions;
 use meta_srv::metasrv::MetaSrvOptions;
 use serde::{Deserialize, Serialize};
 use snafu::ResultExt;
+use table::metadata::TableId;
 
 use crate::error::{LoadLayeredConfigSnafu, Result, SerdeJsonSnafu};
 
@@ -39,6 +42,28 @@ pub struct MixOptions {
     pub datanode: DatanodeOptions,
     pub logging: LoggingOptions,
     pub wal_meta: MetaSrvWalConfig,
+    pub metasrv: Option<MetaSrvOptions>,
+    pub region_server_service: Option<RegionServerService>,
+    pub pair_node: Option<PairNode>,
+    pub table_id_range: Option<TableIdRange>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct RegionServerService {
+    pub enable: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PairNode {
+    pub pair_metasrv: MetaClientOptions,
+    pub pair_region_server: Peer,
+    pub enable_dual_read: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct TableIdRange {
+    pub start: TableId,
+    pub end: TableId,
 }
 
 impl From<MixOptions> for FrontendOptions {

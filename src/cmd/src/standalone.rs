@@ -17,10 +17,13 @@ use std::{fs, path};
 
 use async_trait::async_trait;
 use clap::Parser;
+use client::client_manager::DatanodeClients;
+use common_base::Plugins;
 use common_catalog::consts::MIN_USER_TABLE_ID;
 use common_config::{metadata_store_dir, KvBackendConfig};
 use common_meta::cache_invalidator::DummyCacheInvalidator;
 use common_meta::datanode_manager::DatanodeManagerRef;
+use common_meta::ddl::proxy::ProxyDdlTaskExecutor;
 use common_meta::ddl::table_meta::{TableMetadataAllocator, TableMetadataAllocatorRef};
 use common_meta::ddl::DdlTaskExecutorRef;
 use common_meta::ddl_manager::DdlManager;
@@ -36,14 +39,20 @@ use common_time::timezone::set_default_timezone;
 use common_wal::config::StandaloneWalConfig;
 use datanode::config::{DatanodeOptions, ProcedureConfig, RegionEngineConfig, StorageConfig};
 use datanode::datanode::{Datanode, DatanodeBuilder};
+use datanode::region_server::dual_read::DualReadTableProviderFactory;
+use datanode::region_server::TableProviderFactoryRef;
 use file_engine::config::EngineConfig as FileEngineConfig;
 use frontend::frontend::FrontendOptions;
 use frontend::instance::builder::FrontendBuilder;
+use frontend::instance::standalone::PairRegionServerRequester;
 use frontend::instance::{FrontendInstance, Instance as FeInstance, StandaloneDatanodeManager};
 use frontend::server::Services;
 use frontend::service_config::{
     GrpcOptions, InfluxdbOptions, MysqlOptions, OpentsdbOptions, PostgresOptions, PromStoreOptions,
 };
+use futures::future;
+use meta_srv::bootstrap::MetaSrvInstance;
+use meta_srv::metasrv::MetaSrvOptions;
 use mito2::config::MitoConfig;
 use serde::{Deserialize, Serialize};
 use servers::export_metrics::ExportMetricsOption;
@@ -53,11 +62,14 @@ use servers::Mode;
 use snafu::ResultExt;
 
 use crate::error::{
-    CreateDirSnafu, IllegalConfigSnafu, InitDdlManagerSnafu, InitMetadataSnafu, InitTimezoneSnafu,
-    Result, ShutdownDatanodeSnafu, ShutdownFrontendSnafu, StartDatanodeSnafu, StartFrontendSnafu,
+    BuildMetaServerSnafu, CreateDirSnafu, IllegalConfigSnafu, InitDdlManagerSnafu,
+    InitMetadataSnafu, InitTimezoneSnafu, Result, ShutdownDatanodeSnafu, ShutdownFrontendSnafu,
+    ShutdownMetaServerSnafu, StartDatanodeSnafu, StartFrontendSnafu, StartMetaServerSnafu,
     StartProcedureManagerSnafu, StartWalOptionsAllocatorSnafu, StopProcedureManagerSnafu,
 };
-use crate::options::{CliOptions, MixOptions, Options};
+use crate::options::{
+    CliOptions, MixOptions, Options, PairNode, RegionServerService, TableIdRange,
+};
 use crate::App;
 
 #[derive(Parser)]
@@ -117,6 +129,10 @@ pub struct StandaloneOptions {
     /// Options for different store engines.
     pub region_engine: Vec<RegionEngineConfig>,
     pub export_metrics: ExportMetricsOption,
+    pub metasrv: Option<MetaSrvOptions>,
+    pub region_server_service: Option<RegionServerService>,
+    pub pair_node: Option<PairNode>,
+    pub table_id_range: Option<TableIdRange>,
 }
 
 impl StandaloneOptions {
@@ -149,6 +165,10 @@ impl Default for StandaloneOptions {
                 RegionEngineConfig::Mito(MitoConfig::default()),
                 RegionEngineConfig::File(FileEngineConfig::default()),
             ],
+            metasrv: None,
+            region_server_service: None,
+            pair_node: None,
+            table_id_range: None,
         }
     }
 }
@@ -192,6 +212,7 @@ pub struct Instance {
     frontend: FeInstance,
     procedure_manager: ProcedureManagerRef,
     wal_options_allocator: WalOptionsAllocatorRef,
+    metasrv: Option<MetaSrvInstance>,
 }
 
 #[async_trait]
@@ -217,11 +238,28 @@ impl App for Instance {
             .await
             .context(StartFrontendSnafu)?;
 
-        self.frontend.start().await.context(StartFrontendSnafu)?;
+        let frontend_starter = async { self.frontend.start().await.context(StartFrontendSnafu) };
+
+        let metasrv_starter = if let Some(metasrv) = &mut self.metasrv {
+            future::Either::Left(async {
+                info!("Starting Metasrv service ...");
+
+                metasrv.start().await.context(StartMetaServerSnafu)
+            })
+        } else {
+            future::Either::Right(future::ok(()))
+        };
+
+        future::try_join(frontend_starter, metasrv_starter).await?;
+
         Ok(())
     }
 
     async fn stop(&self) -> Result<()> {
+        if let Some(metasrv) = &self.metasrv {
+            metasrv.shutdown().await.context(ShutdownMetaServerSnafu)?;
+        }
+
         self.frontend
             .shutdown()
             .await
@@ -350,6 +388,11 @@ impl StartCommand {
 
         opts.user_provider = self.user_provider.clone();
 
+        let metasrv = opts.metasrv.take();
+        let pair_node = opts.pair_node.take();
+        let region_server_service = opts.region_server_service.take();
+        let table_id_range = opts.table_id_range.take();
+
         let metadata_store = opts.metadata_store.clone();
         let procedure = opts.procedure.clone();
         let frontend = opts.clone().frontend_options();
@@ -365,6 +408,10 @@ impl StartCommand {
             datanode,
             logging,
             wal_meta,
+            metasrv,
+            region_server_service,
+            pair_node,
+            table_id_range,
         })))
     }
 
@@ -401,16 +448,38 @@ impl StartCommand {
 
         let builder =
             DatanodeBuilder::new(dn_opts, fe_plugins.clone()).with_kv_backend(kv_backend.clone());
+
+        if let Some(pair_node) = &opts.pair_node {
+            if pair_node.enable_dual_read {
+                let table_provider_factory: TableProviderFactoryRef =
+                    Arc::new(DualReadTableProviderFactory::new(
+                        Arc::new(DatanodeClients::default()),
+                        pair_node.pair_region_server.clone(),
+                    ));
+                fe_plugins.insert(table_provider_factory);
+            }
+        }
+
         let datanode = builder.build().await.context(StartDatanodeSnafu)?;
 
-        let datanode_manager = Arc::new(StandaloneDatanodeManager(datanode.region_server()));
+        let region_server = opts.region_server_service.as_ref().and_then(|x| {
+            if x.enable {
+                Some(datanode.region_server())
+            } else {
+                None
+            }
+        });
 
-        let table_id_sequence = Arc::new(
-            SequenceBuilder::new("table_id", kv_backend.clone())
-                .initial(MIN_USER_TABLE_ID as u64)
-                .step(10)
-                .build(),
-        );
+        let requester = opts
+            .pair_node
+            .as_ref()
+            .map(|x| PairRegionServerRequester::new(x.pair_region_server.clone()));
+
+        let datanode_manager: DatanodeManagerRef = Arc::new(StandaloneDatanodeManager::new(
+            datanode.region_server(),
+            requester,
+        ));
+
         let wal_options_allocator = Arc::new(WalOptionsAllocator::new(
             opts.wal_meta.clone(),
             kv_backend.clone(),
@@ -419,17 +488,44 @@ impl StartCommand {
         let table_metadata_manager =
             Self::create_table_metadata_manager(kv_backend.clone()).await?;
 
-        let table_meta_allocator = Arc::new(TableMetadataAllocator::new(
+        let table_id_sequence = if let Some(range) = &opts.table_id_range {
+            Arc::new(
+                SequenceBuilder::new("table_id", kv_backend.clone())
+                    .initial(range.start as u64)
+                    .step(10)
+                    .max(range.end as u64)
+                    .build(),
+            )
+        } else {
+            Arc::new(
+                SequenceBuilder::new("table_id", kv_backend.clone())
+                    .initial(MIN_USER_TABLE_ID as u64)
+                    .step(10)
+                    .build(),
+            )
+        };
+
+        let table_metadata_allocator = Arc::new(TableMetadataAllocator::new(
             table_id_sequence,
             wal_options_allocator.clone(),
             table_metadata_manager.table_name_manager().clone(),
         ));
 
+        let metasrv = Self::create_metasrv(
+            opts.metasrv.as_ref(),
+            &kv_backend,
+            &fe_plugins,
+            &datanode_manager,
+            &table_metadata_allocator,
+        )
+        .await?;
+
         let ddl_task_executor = Self::create_ddl_task_executor(
+            opts.pair_node.as_ref(),
             table_metadata_manager,
             procedure_manager.clone(),
             datanode_manager.clone(),
-            table_meta_allocator,
+            table_metadata_allocator,
         )
         .await?;
 
@@ -439,7 +535,25 @@ impl StartCommand {
             .await
             .context(StartFrontendSnafu)?;
 
+        let services = Services::new(
+            fe_opts.clone(),
+            Arc::new(frontend.clone()),
+            fe_plugins.clone(),
+        );
+
+        let builder = services
+            .grpc_server_builder(&fe_opts.grpc)
+            .map(|x| {
+                if let Some(region_server) = region_server {
+                    x.region_server_handler(Arc::new(region_server))
+                } else {
+                    x
+                }
+            })
+            .context(StartFrontendSnafu)?;
+
         let servers = Services::new(fe_opts.clone(), Arc::new(frontend.clone()), fe_plugins)
+            .with_grpc_server_builder(builder)
             .build()
             .context(StartFrontendSnafu)?;
         frontend
@@ -451,16 +565,52 @@ impl StartCommand {
             frontend,
             procedure_manager,
             wal_options_allocator,
+            metasrv,
         })
     }
 
-    pub async fn create_ddl_task_executor(
+    async fn create_metasrv(
+        opts: Option<&MetaSrvOptions>,
+        kv_backend: &KvBackendRef,
+        plugins: &Plugins,
+        datanode_manager: &DatanodeManagerRef,
+        table_metadata_allocator: &TableMetadataAllocator,
+    ) -> Result<Option<MetaSrvInstance>> {
+        let metasrv = if let Some(opts) = opts {
+            let builder = meta_srv::bootstrap::metasrv_builder(
+                opts,
+                plugins.clone(),
+                Some(kv_backend.clone()),
+            )
+            .await
+            .context(BuildMetaServerSnafu)?;
+
+            let metasrv = builder
+                .datanode_manager(datanode_manager.clone())
+                .table_metadata_allocator(table_metadata_allocator.clone())
+                .build()
+                .await
+                .context(BuildMetaServerSnafu)?;
+
+            Some(
+                MetaSrvInstance::new(opts.clone(), plugins.clone(), metasrv)
+                    .await
+                    .context(BuildMetaServerSnafu)?,
+            )
+        } else {
+            None
+        };
+        Ok(metasrv)
+    }
+
+    async fn create_ddl_task_executor(
+        opts: Option<&PairNode>,
         table_metadata_manager: TableMetadataManagerRef,
         procedure_manager: ProcedureManagerRef,
         datanode_manager: DatanodeManagerRef,
         table_meta_allocator: TableMetadataAllocatorRef,
     ) -> Result<DdlTaskExecutorRef> {
-        let ddl_task_executor: DdlTaskExecutorRef = Arc::new(
+        let mut ddl_task_executor: DdlTaskExecutorRef = Arc::new(
             DdlManager::try_new(
                 procedure_manager,
                 datanode_manager,
@@ -471,6 +621,17 @@ impl StartCommand {
             )
             .context(InitDdlManagerSnafu)?,
         );
+
+        if let Some(pair_node) = opts {
+            let meta_client = FeInstance::create_meta_client(&pair_node.pair_metasrv)
+                .await
+                .context(StartFrontendSnafu)?;
+
+            ddl_task_executor = Arc::new(ProxyDdlTaskExecutor::new(vec![
+                ddl_task_executor,
+                meta_client,
+            ]))
+        }
 
         Ok(ddl_task_executor)
     }

@@ -772,7 +772,7 @@ experimental_write_cache_path = ""
 experimental_write_cache_size = "512MiB"
 sst_write_buffer_size = "8MiB"
 parallel_scan_channel_size = 32
-allow_stale_entries = false
+allow_stale_entries = true
 
 [datanode.region_engine.mito.inverted_index]
 create_on_flush = "auto"

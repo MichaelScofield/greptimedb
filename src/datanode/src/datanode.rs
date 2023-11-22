@@ -67,7 +67,7 @@ use crate::event_listener::{
 };
 use crate::greptimedb_telemetry::get_greptimedb_telemetry_task;
 use crate::heartbeat::HeartbeatTask;
-use crate::region_server::{DummyTableProviderFactory, RegionServer};
+use crate::region_server::{DummyTableProviderFactory, RegionServer, TableProviderFactoryRef};
 use crate::store;
 
 const OPEN_REGION_PARALLELISM: usize = 16;
@@ -299,6 +299,12 @@ impl DatanodeBuilder {
         open_all_regions(region_server.clone(), table_values, open_with_writable).await
     }
 
+    fn table_provider_factory(&self) -> TableProviderFactoryRef {
+        self.plugins
+            .get::<TableProviderFactoryRef>()
+            .unwrap_or_else(|| Arc::new(DummyTableProviderFactory) as _)
+    }
+
     async fn new_region_server(
         &self,
         event_listener: RegionServerEventListenerRef,
@@ -323,12 +329,11 @@ impl DatanodeBuilder {
                 .context(RuntimeResourceSnafu)?,
         );
 
-        let table_provider_factory = Arc::new(DummyTableProviderFactory);
         let mut region_server = RegionServer::with_table_provider(
             query_engine,
             runtime,
             event_listener,
-            table_provider_factory,
+            self.table_provider_factory(),
         );
 
         let object_store_manager = Self::build_object_store_manager(opts).await?;

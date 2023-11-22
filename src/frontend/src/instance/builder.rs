@@ -105,7 +105,7 @@ impl FrontendBuilder {
         let deleter = Arc::new(Deleter::new(
             catalog_manager.clone(),
             partition_manager,
-            datanode_manager.clone(),
+            datanode_manager,
         ));
         let table_mutation_handler = Arc::new(TableMutationOperator::new(
             inserter.clone(),
@@ -114,7 +114,7 @@ impl FrontendBuilder {
 
         let query_engine = QueryEngineFactory::new_with_plugins(
             catalog_manager.clone(),
-            Some(region_query_handler.clone()),
+            Some(region_query_handler),
             Some(table_mutation_handler),
             true,
             plugins.clone(),

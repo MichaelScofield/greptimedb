@@ -199,7 +199,6 @@ impl Instance {
                 .context(StartServerSnafu)?;
 
         self.servers = Arc::new(servers);
-
         Ok(())
     }
 
