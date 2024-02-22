@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+pub mod dual_read;
+
 use std::any::Any;
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -97,7 +99,7 @@ impl RegionServer {
         query_engine: QueryEngineRef,
         runtime: Arc<Runtime>,
         event_listener: RegionServerEventListenerRef,
-        table_provider_factory: TableProviderFactoryRef,
+        table_provider_factory: Arc<dyn TableProviderFactory>,
     ) -> Self {
         Self {
             inner: Arc::new(RegionServerInner::new(
@@ -606,8 +608,16 @@ impl RegionServerInner {
         Ok(())
     }
 
-    pub async fn handle_read(&self, request: QueryRequest) -> Result<SendableRecordBatchStream> {
+    pub async fn handle_read(
+        &self,
+        mut request: QueryRequest,
+    ) -> Result<SendableRecordBatchStream> {
         // TODO(ruihang): add metrics and set trace id
+
+        let source = request
+            .header
+            .as_mut()
+            .and_then(|x| x.tracing_context.remove("SOURCE"));
 
         let QueryRequest {
             header,
@@ -633,11 +643,16 @@ impl RegionServerInner {
             return error::RegionNotReadySnafu { region_id }.fail();
         }
 
-        let table_provider = self
-            .table_provider_factory
-            .create(region_id, region_status.into_engine())
-            .await?;
-
+        // TODO(LFC): Find another way to prevent dual read loop instead of this temporary "SOURCE = REGION_SERVER" method.
+        let table_provider = if source == Some("REGION_SERVER".to_string()) {
+            DummyTableProviderFactory
+                .create(region_id, region_status.into_engine())
+                .await?
+        } else {
+            self.table_provider_factory
+                .create(region_id, region_status.into_engine())
+                .await?
+        };
         let catalog_list = Arc::new(DummyCatalogList::with_table_provider(table_provider));
 
         // decode substrait plan to logical plan and execute it

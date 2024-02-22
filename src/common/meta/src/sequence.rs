@@ -111,6 +111,13 @@ impl Inner {
     /// 2. fetch(CAS) next `range` from the `generator`
     /// 3. jump to step 1
     pub async fn next(&mut self) -> Result<u64> {
+        ensure!(
+            self.next < self.max,
+            error::NextSequenceSnafu {
+                err_msg: format!("next sequence exhausted, max: {}", self.max)
+            }
+        );
+
         for _ in 0..self.force_quit {
             match &self.range {
                 Some(range) => {

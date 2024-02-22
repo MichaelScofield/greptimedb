@@ -125,7 +125,7 @@ impl Default for MitoConfig {
             sst_write_buffer_size: DEFAULT_WRITE_BUFFER_SIZE,
             scan_parallelism: divide_num_cpus(4),
             parallel_scan_channel_size: DEFAULT_SCAN_CHANNEL_SIZE,
-            allow_stale_entries: false,
+            allow_stale_entries: true,
             inverted_index: InvertedIndexConfig::default(),
         };
 
