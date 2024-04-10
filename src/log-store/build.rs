@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use protobuf_build::Builder;
+// use protobuf_build::Builder;
 
 fn main() {
-    let base = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
-    Builder::new()
-        .search_dir_for_protos(&format!("{base}/proto"))
-        .includes(&[format!("{base}/include"), format!("{base}/proto")])
-        .include_google_protos()
-        .generate()
+    // let base = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
+    // Builder::new()
+    //     .search_dir_for_protos(&format!("{base}/proto"))
+    //     .includes(&[format!("{base}/include"), format!("{base}/proto")])
+    //     .include_google_protos()
+    //     .generate()
 }
