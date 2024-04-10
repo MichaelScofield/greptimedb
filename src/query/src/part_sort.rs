@@ -38,7 +38,7 @@ use datafusion_common::{internal_err, DataFusionError};
 use datafusion_physical_expr::{LexOrdering, PhysicalSortExpr};
 use futures::{Stream, StreamExt};
 use itertools::Itertools;
-use snafu::location;
+use snafu::{location, Location};
 use store_api::region_engine::PartitionRange;
 
 use crate::{array_iter_helper, downcast_ts_array};

@@ -23,10 +23,11 @@ use store_api::logstore::entry::{Entry, NaiveEntry};
 use store_api::logstore::provider::Provider;
 use store_api::storage::RegionId;
 
-#[allow(renamed_and_removed_lints)]
-pub mod protos {
-    include!(concat!(env!("OUT_DIR"), concat!("/", "protos/", "mod.rs")));
-}
+// #[allow(renamed_and_removed_lints)]
+// pub mod protos {
+//     include!(concat!(env!("OUT_DIR"), concat!("/", "protos/", "mod.rs")));
+// }
+pub mod protos;
 
 impl EntryImpl {
     pub fn create(id: u64, ns: u64, data: Vec<u8>) -> Self {

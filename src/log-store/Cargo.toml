@@ -4,10 +4,13 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
-[build-dependencies]
-protobuf-build = { version = "0.15", default-features = false, features = [
-    "protobuf-codec",
-] }
+# Because Datafusion (more specifically, its dependent Substrait 0.34) requires protobuf-src 2.0,
+# while protobuf-build here depends on protobuf-src 1.1. To resolve this conflict, I comment out
+# the protobuf-build, and copy its last generated codes to our source directory directly.
+# [build-dependencies]
+# protobuf-build = { version = "0.15", default-features = false, features = [
+#     "protobuf-codec",
+# ] }
 
 [lints]
 workspace = true

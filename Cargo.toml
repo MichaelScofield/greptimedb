@@ -63,6 +63,7 @@ members = [
     "tests-fuzz",
     "tests-integration",
     "tests/runner",
+    "datafusion/datafusion-examples",
 ]
 resolver = "2"
 
@@ -70,15 +71,22 @@ resolver = "2"
 version = "0.13.0"
 edition = "2021"
 license = "Apache-2.0"
+homepage = "https://greptime.com/"
+authors = ["GreptimeTeam"]
+repository = "https://github.com/GreptimeTeam/"
+rust-version = "1.80.1"
 
 [workspace.lints]
-clippy.print_stdout = "warn"
-clippy.print_stderr = "warn"
-clippy.dbg_macro = "warn"
-clippy.implicit_clone = "warn"
+clippy.print_stdout = "allow"
+clippy.print_stderr = "allow"
+clippy.unnecessary_map_or = "allow"
+clippy.needless-lifetimes = "allow"
+clippy.extra-unused-lifetimes = "allow"
+clippy.suspicious-doc-comments = "allow"
+clippy.useless_conversion = "allow"
 clippy.readonly_write_lock = "allow"
 rust.unknown_lints = "deny"
-rust.unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tokio_unstable)'] }
+rust.unexpected_cfgs = { level = "allow", check-cfg = ['cfg(tokio_unstable)'] }
 
 [workspace.dependencies]
 # DO_NOT_REMOVE_THIS: BEGIN_OF_EXTERNAL_DEPENDENCIES
@@ -87,13 +95,7 @@ rust.unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tokio_unstable)'] }
 # for the inherited dependency but cannot do the reverse (override from true to false).
 #
 # See for more detaiils: https://github.com/rust-lang/cargo/issues/11329
-ahash = { version = "0.8", features = ["compile-time-rng"] }
 aquamarine = "0.3"
-arrow = { version = "53.0.0", features = ["prettyprint"] }
-arrow-array = { version = "53.0.0", default-features = false, features = ["chrono-tz"] }
-arrow-flight = "53.0"
-arrow-ipc = { version = "53.0.0", default-features = false, features = ["lz4", "zstd"] }
-arrow-schema = { version = "53.0", features = ["serde"] }
 async-stream = "0.3"
 async-trait = "0.1"
 # Remember to update axum-extra, axum-macros when updating axum
@@ -112,15 +114,59 @@ clap = { version = "4.4", features = ["derive"] }
 config = "0.13.0"
 crossbeam-utils = "0.8"
 dashmap = "5.4"
-datafusion = { git = "https://github.com/apache/datafusion.git", rev = "2464703c84c400a09cc59277018813f0e797bb4e" }
-datafusion-common = { git = "https://github.com/apache/datafusion.git", rev = "2464703c84c400a09cc59277018813f0e797bb4e" }
-datafusion-expr = { git = "https://github.com/apache/datafusion.git", rev = "2464703c84c400a09cc59277018813f0e797bb4e" }
-datafusion-functions = { git = "https://github.com/apache/datafusion.git", rev = "2464703c84c400a09cc59277018813f0e797bb4e" }
-datafusion-optimizer = { git = "https://github.com/apache/datafusion.git", rev = "2464703c84c400a09cc59277018813f0e797bb4e" }
-datafusion-physical-expr = { git = "https://github.com/apache/datafusion.git", rev = "2464703c84c400a09cc59277018813f0e797bb4e" }
-datafusion-physical-plan = { git = "https://github.com/apache/datafusion.git", rev = "2464703c84c400a09cc59277018813f0e797bb4e" }
-datafusion-sql = { git = "https://github.com/apache/datafusion.git", rev = "2464703c84c400a09cc59277018813f0e797bb4e" }
-datafusion-substrait = { git = "https://github.com/apache/datafusion.git", rev = "2464703c84c400a09cc59277018813f0e797bb4e" }
+
+
+# Dependent by DataFusion.
+ahash = { version = "0.8", default-features = false, features = ["runtime-rng"] }
+arrow = { version = "53.3.0", features = ["prettyprint"] }
+arrow-array = { version = "53.3.0", default-features = false, features = ["chrono-tz"] }
+arrow-buffer = { version = "53.3.0", default-features = false }
+arrow-flight = { version = "53.3.0", features = ["flight-sql-experimental"] }
+arrow-ipc = { version = "53.3.0", default-features = false, features = ["lz4", "zstd"] }
+arrow-ord = { version = "53.3.0", default-features = false }
+arrow-schema = { version = "53.3.0", default-features = false, features = ["serde"] }
+ctor = "0.2.0"
+datafusion = { path = "datafusion/datafusion/core", default-features = false }
+datafusion-catalog = { path = "datafusion/datafusion/catalog" }
+datafusion-common = { path = "datafusion/datafusion/common", default-features = false }
+datafusion-common-runtime = { path = "datafusion/datafusion/common-runtime" }
+datafusion-doc = { path = "datafusion/datafusion/doc" }
+datafusion-execution = { path = "datafusion/datafusion/execution" }
+datafusion-expr = { path = "datafusion/datafusion/expr" }
+datafusion-expr-common = { path = "datafusion/datafusion/expr-common" }
+datafusion-ffi = { path = "datafusion/datafusion/ffi" }
+datafusion-functions = { path = "datafusion/datafusion/functions" }
+datafusion-functions-aggregate = { path = "datafusion/datafusion/functions-aggregate" }
+datafusion-functions-aggregate-common = { path = "datafusion/datafusion/functions-aggregate-common" }
+datafusion-functions-nested = { path = "datafusion/datafusion/functions-nested" }
+datafusion-functions-table = { path = "datafusion/datafusion/functions-table" }
+datafusion-functions-window = { path = "datafusion/datafusion/functions-window" }
+datafusion-functions-window-common = { path = "datafusion/datafusion/functions-window-common" }
+datafusion-macros = { path = "datafusion/datafusion/macros" }
+datafusion-optimizer = { path = "datafusion/datafusion/optimizer", default-features = false }
+datafusion-physical-expr = { path = "datafusion/datafusion/physical-expr", default-features = false }
+datafusion-physical-expr-common = { path = "datafusion/datafusion/physical-expr-common", default-features = false }
+datafusion-physical-optimizer = { path = "datafusion/datafusion/physical-optimizer" }
+datafusion-physical-plan = { path = "datafusion/datafusion/physical-plan" }
+datafusion-proto = { path = "datafusion/datafusion/proto" }
+datafusion-proto-common = { path = "datafusion/datafusion/proto-common" }
+datafusion-sql = { path = "datafusion/datafusion/sql" }
+datafusion-substrait = { path = "datafusion/datafusion/substrait" }
+doc-comment = "0.3"
+env_logger = "0.11"
+half = { version = "2.2.1", default-features = false }
+hashbrown = { version = "0.14.5", features = ["raw"] }
+indexmap = "2.0.0"
+log = "^0.4"
+object_store = { version = "0.11.0", default-features = false }
+parquet = { version = "53.3.0", default-features = false, features = ["arrow", "async", "object_store"] }
+pbjson = { version = "0.7.0" }
+# Should match arrow-flight's version of prost.
+prost-derive = "0.13.1"
+recursive = "0.1.1"
+url = "2.2"
+
+
 deadpool = "0.10"
 deadpool-postgres = "0.12"
 derive_builder = "0.12"
@@ -136,7 +182,7 @@ humantime = "2.1"
 humantime-serde = "1.1"
 hyper = "1.1"
 hyper-util = "0.1"
-itertools = "0.10"
+itertools = "0.13"
 jsonb = { git = "https://github.com/databendlabs/jsonb.git", rev = "8c8d2fc294a39f3ff08909d60f718639cfba3875", default-features = false }
 lazy_static = "1.4"
 local-ip-address = "0.6"
@@ -156,7 +202,6 @@ opentelemetry-proto = { version = "0.27", features = [
     "logs",
 ] }
 parking_lot = "0.12"
-parquet = { version = "53.0.0", default-features = false, features = ["arrow", "async", "object_store"] }
 paste = "1.0"
 pin-project = "1.0"
 prometheus = { version = "0.13.3", features = ["process"] }
@@ -199,7 +244,7 @@ sqlparser = { git = "https://github.com/GreptimeTeam/sqlparser-rs.git", rev = "7
 strum = { version = "0.25", features = ["derive"] }
 tempfile = "3"
 tokio = { version = "1.40", features = ["full"] }
-tokio-postgres = "0.7"
+tokio-postgres = "=0.7.12"
 tokio-rustls = { version = "0.26.0", default-features = false } # override by patch, see [patch.crates-io]
 tokio-stream = "0.1"
 tokio-util = { version = "0.7", features = ["io-util", "compat"] }

@@ -26,7 +26,7 @@ use common_meta::node_manager::Flownode;
 use common_telemetry::{debug, trace};
 use datatypes::value::Value;
 use itertools::Itertools;
-use snafu::{IntoError, OptionExt, ResultExt};
+use snafu::{IntoError, Location, OptionExt, ResultExt};
 use store_api::storage::RegionId;
 
 use crate::adapter::{CreateFlowArgs, FlowWorkerManager};
