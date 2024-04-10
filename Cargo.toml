@@ -60,6 +60,19 @@ members = [
     "tests-fuzz",
     "tests-integration",
     "tests/runner",
+    # for importing datafusion
+    "datafusion/datafusion/common",
+    "datafusion/datafusion/common-runtime",
+    "datafusion/datafusion/core",
+    "datafusion/datafusion/expr",
+    "datafusion/datafusion/execution",
+    "datafusion/datafusion/functions",
+    "datafusion/datafusion/functions-array",
+    "datafusion/datafusion/optimizer",
+    "datafusion/datafusion/physical-expr",
+    "datafusion/datafusion/physical-plan",
+    "datafusion/datafusion/sql",
+    "datafusion/datafusion/substrait",
 ]
 resolver = "2"
 
@@ -67,6 +80,10 @@ resolver = "2"
 version = "0.9.0"
 edition = "2021"
 license = "Apache-2.0"
+homepage = "https://greptime.com/"
+authors = ["GreptimeTeam"]
+repository = "https://github.com/GreptimeTeam/"
+rust-version = "1.72"
 
 [workspace.lints]
 clippy.print_stdout = "warn"
@@ -104,15 +121,41 @@ clap = { version = "4.4", features = ["derive"] }
 config = "0.13.0"
 crossbeam-utils = "0.8"
 dashmap = "5.4"
-datafusion = { git = "https://github.com/waynexia/arrow-datafusion.git", rev = "d7bda5c9b762426e81f144296deadc87e5f4a0b8" }
-datafusion-common = { git = "https://github.com/waynexia/arrow-datafusion.git", rev = "d7bda5c9b762426e81f144296deadc87e5f4a0b8" }
-datafusion-expr = { git = "https://github.com/waynexia/arrow-datafusion.git", rev = "d7bda5c9b762426e81f144296deadc87e5f4a0b8" }
-datafusion-functions = { git = "https://github.com/waynexia/arrow-datafusion.git", rev = "d7bda5c9b762426e81f144296deadc87e5f4a0b8" }
-datafusion-optimizer = { git = "https://github.com/waynexia/arrow-datafusion.git", rev = "d7bda5c9b762426e81f144296deadc87e5f4a0b8" }
-datafusion-physical-expr = { git = "https://github.com/waynexia/arrow-datafusion.git", rev = "d7bda5c9b762426e81f144296deadc87e5f4a0b8" }
-datafusion-physical-plan = { git = "https://github.com/waynexia/arrow-datafusion.git", rev = "d7bda5c9b762426e81f144296deadc87e5f4a0b8" }
-datafusion-sql = { git = "https://github.com/waynexia/arrow-datafusion.git", rev = "d7bda5c9b762426e81f144296deadc87e5f4a0b8" }
-datafusion-substrait = { git = "https://github.com/waynexia/arrow-datafusion.git", rev = "d7bda5c9b762426e81f144296deadc87e5f4a0b8" }
+
+
+# for importing datafusion
+datafusion = { path = "datafusion/datafusion/core" }
+datafusion-common = { path = "datafusion/datafusion/common" }
+datafusion-common-runtime = { path = "datafusion/datafusion/common-runtime" }
+datafusion-execution = { path = "datafusion/datafusion/execution" }
+datafusion-expr = { path = "datafusion/datafusion/expr" }
+datafusion-functions = { path = "datafusion/datafusion/functions" }
+datafusion-functions-aggregate = { path = "datafusion/datafusion/functions-aggregate" }
+datafusion-functions-array = { path = "datafusion/datafusion/functions-array" }
+datafusion-optimizer = { path = "datafusion/datafusion/optimizer" }
+datafusion-physical-expr = { path = "datafusion/datafusion/physical-expr" }
+datafusion-physical-expr-common = { path = "datafusion/datafusion/physical-expr-common" }
+datafusion-physical-plan = { path = "datafusion/datafusion/physical-plan" }
+datafusion-proto = { path = "datafusion/datafusion/proto" }
+datafusion-sql = { path = "datafusion/datafusion/sql" }
+datafusion-sqllogictest = { path = "datafusion/datafusion/sqllogictest" }
+datafusion-substrait = { path = "datafusion/datafusion/substrait" }
+half = { version = "2.2.1", default-features = false }
+hashbrown = { version = "0.14", features = ["raw"] }
+indexmap = "2.0.0"
+log = "^0.4"
+object_store = { version = "0.9.1", default-features = false }
+parking_lot = "0.12"
+url = "2.2"
+ctor = "0.2.0"
+doc-comment = "0.3"
+env_logger = "0.11"
+thiserror = "1.0.44"
+arrow-buffer = { version = "51.0.0", default-features = false }
+arrow-ord = { version = "51.0.0", default-features = false }
+arrow-string = { version = "51.0.0", default-features = false }
+
+
 derive_builder = "0.12"
 dotenv = "0.15"
 etcd-client = { version = "0.13" }
@@ -122,7 +165,7 @@ futures-util = "0.3"
 greptime-proto = { git = "https://github.com/GreptimeTeam/greptime-proto.git", rev = "5c801650435d464891114502539b701c77a1b914" }
 humantime = "2.1"
 humantime-serde = "1.1"
-itertools = "0.10"
+itertools = "0.12"
 lazy_static = "1.4"
 meter-core = { git = "https://github.com/GreptimeTeam/greptime-meter.git", rev = "80b72716dcde47ec4161478416a5c6c21343364d" }
 mockall = "0.11.4"
