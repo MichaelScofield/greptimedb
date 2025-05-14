@@ -154,10 +154,11 @@ impl Categorizer {
     }
 
     pub fn check_expr(expr: &Expr) -> Commutativity {
+        #[allow(deprecated)]
         match expr {
             Expr::Column(_)
             | Expr::ScalarVariable(_, _)
-            | Expr::Literal(_)
+            | Expr::Literal(_, _)
             | Expr::BinaryExpr(_)
             | Expr::Not(_)
             | Expr::IsNotNull(_)
