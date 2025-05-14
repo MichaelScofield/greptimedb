@@ -91,6 +91,7 @@ impl Round {
 mod tests {
     use datafusion_expr::ScalarFunctionArgs;
     use datatypes::arrow::array::Float64Array;
+    use datatypes::arrow::datatypes::Field;
 
     use super::*;
 
@@ -100,10 +101,16 @@ mod tests {
             ColumnarValue::Array(Arc::new(Float64Array::from(value))),
             ColumnarValue::Scalar(ScalarValue::Float64(Some(nearest))),
         ];
+        let arg_fields = vec![
+            Arc::new(Field::new("a", input[0].data_type(), false)),
+            Arc::new(Field::new("b", input[1].data_type(), false)),
+        ];
+        let return_field = Arc::new(Field::new("c", DataType::Float64, false));
         let args = ScalarFunctionArgs {
             args: input,
+            arg_fields,
             number_rows: 1,
-            return_type: &DataType::Float64,
+            return_field,
         };
         let result = round_udf.invoke_with_args(args).unwrap();
         let result_array = extract_array(&result).unwrap();

@@ -35,7 +35,7 @@ use datafusion::physical_plan::{
     DisplayAs, DisplayFormatType, ExecutionPlan, ExecutionPlanProperties, PlanProperties, TopK,
 };
 use datafusion_common::{internal_err, DataFusionError};
-use datafusion_physical_expr::{LexOrdering, PhysicalSortExpr};
+use datafusion_physical_expr::PhysicalSortExpr;
 use futures::{Stream, StreamExt};
 use itertools::Itertools;
 use snafu::location;
@@ -242,7 +242,8 @@ impl PartSortStream {
                 TopK::try_new(
                     partition,
                     sort.schema().clone(),
-                    LexOrdering::new(vec![sort.expression.clone()]),
+                    vec![],
+                    [sort.expression.clone()].into(),
                     limit,
                     context.session_config().batch_size(),
                     context.runtime_env(),
@@ -495,7 +496,8 @@ impl PartSortStream {
         let new_top_buffer = TopK::try_new(
             self.partition,
             self.schema().clone(),
-            LexOrdering::new(vec![self.expression.clone()]),
+            vec![],
+            [self.expression.clone()].into(),
             self.limit.unwrap(),
             self.context.session_config().batch_size(),
             self.context.runtime_env(),

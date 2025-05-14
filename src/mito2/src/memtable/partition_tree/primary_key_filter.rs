@@ -150,8 +150,8 @@ mod tests {
 
     use api::v1::SemanticType;
     use datafusion::logical_expr::BinaryExpr;
-    use datafusion_common::{Column, ScalarValue};
-    use datafusion_expr::{Expr, Operator};
+    use datafusion_common::Column;
+    use datafusion_expr::{Expr, Literal, Operator};
     use datatypes::prelude::ConcreteDataType;
     use datatypes::schema::ColumnSchema;
     use datatypes::value::ValueRef;
@@ -222,7 +222,7 @@ mod tests {
         let expr = Expr::BinaryExpr(BinaryExpr {
             left: Box::new(Expr::Column(Column::from_name(column_name))),
             op: Operator::Eq,
-            right: Box::new(Expr::Literal(ScalarValue::Utf8(Some(value.to_string())))),
+            right: Box::new(value.lit()),
         });
         SimpleFilterEvaluator::try_new(&expr).unwrap()
     }

@@ -37,14 +37,16 @@ pub(crate) async fn new_azblob_object_store(azblob_config: &AzblobConfig) -> Res
         .container(&azblob_config.container)
         .endpoint(&azblob_config.endpoint)
         .account_name(azblob_config.account_name.expose_secret())
-        .account_key(azblob_config.account_key.expose_secret())
-        .http_client(client);
+        .account_key(azblob_config.account_key.expose_secret());
 
     if let Some(token) = &azblob_config.sas_token {
         builder = builder.sas_token(token);
     };
 
-    Ok(ObjectStore::new(builder)
+    let operator = ObjectStore::new(builder)
         .context(error::InitBackendSnafu)?
-        .finish())
+        .finish();
+
+    operator.update_http_client(|_| client);
+    Ok(operator)
 }

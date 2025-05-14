@@ -173,17 +173,17 @@ impl<'a> StatementToRegion<'a> {
             [table] => Ok((
                 self.ctx.current_catalog().to_owned(),
                 self.ctx.current_schema(),
-                table.value.clone(),
+                table.to_string(),
             )),
             [schema, table] => Ok((
                 self.ctx.current_catalog().to_owned(),
-                schema.value.clone(),
-                table.value.clone(),
+                schema.to_string(),
+                table.to_string(),
             )),
             [catalog, schema, table] => Ok((
-                catalog.value.clone(),
-                schema.value.clone(),
-                table.value.clone(),
+                catalog.to_string(),
+                schema.to_string(),
+                table.to_string(),
             )),
             _ => InvalidSqlSnafu {
                 err_msg: format!(
