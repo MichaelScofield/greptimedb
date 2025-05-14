@@ -70,7 +70,15 @@ impl DfLogicalPlanner {
 
     #[tracing::instrument(skip_all)]
     async fn plan_sql(&self, stmt: &Statement, query_ctx: QueryContextRef) -> Result<LogicalPlan> {
-        let df_stmt = stmt.try_into().context(SqlSnafu)?;
+        let mut df_stmt = stmt.try_into().context(SqlSnafu)?;
+
+        // TODO(LFC): Remove this when Datafusion supports **both** the syntax and implementation of "explain with format".
+        if let datafusion::sql::parser::Statement::Statement(
+            box datafusion::sql::sqlparser::ast::Statement::Explain { format, .. },
+        ) = &mut df_stmt
+        {
+            format.take();
+        }
 
         let table_provider = DfTableSourceProvider::new(
             self.engine_state.catalog_manager().clone(),
@@ -102,6 +110,7 @@ impl DfLogicalPlanner {
             support_varchar_with_length: parser_options.support_varchar_with_length,
             enable_options_value_normalization: parser_options.enable_options_value_normalization,
             collect_spans: parser_options.collect_spans,
+            map_string_types_to_utf8view: parser_options.map_string_types_to_utf8view,
         };
 
         let sql_to_rel = SqlToRel::new_with_options(&context_provider, parser_options);
@@ -149,6 +158,7 @@ impl DfLogicalPlanner {
             support_varchar_with_length: parser_options.support_varchar_with_length,
             enable_options_value_normalization: parser_options.enable_options_value_normalization,
             collect_spans: parser_options.collect_spans,
+            map_string_types_to_utf8view: parser_options.map_string_types_to_utf8view,
         };
 
         let sql_to_rel = SqlToRel::new_with_options(&context_provider, parser_options);

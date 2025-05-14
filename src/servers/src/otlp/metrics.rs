@@ -15,9 +15,11 @@
 use api::v1::{RowInsertRequests, Value};
 use common_grpc::precision::Precision;
 use common_query::prelude::{GREPTIME_COUNT, GREPTIME_TIMESTAMP, GREPTIME_VALUE};
-use opentelemetry_proto::tonic::collector::metrics::v1::ExportMetricsServiceRequest;
-use opentelemetry_proto::tonic::common::v1::{any_value, KeyValue};
-use opentelemetry_proto::tonic::metrics::v1::{metric, number_data_point, *};
+use otel_arrow_rust::proto::opentelemetry::collector::metrics::v1::ExportMetricsServiceRequest;
+use otel_arrow_rust::proto::opentelemetry::common::v1::{any_value, KeyValue};
+use otel_arrow_rust::proto::opentelemetry::metrics::v1::{
+    metric, number_data_point, ExponentialHistogram, Gauge, Histogram, Metric, Sum, Summary,
+};
 
 use crate::error::Result;
 use crate::row_writer::{self, MultiTableData, TableData};
@@ -392,11 +394,13 @@ fn encode_summary(
 
 #[cfg(test)]
 mod tests {
-    use opentelemetry_proto::tonic::common::v1::any_value::Value as Val;
-    use opentelemetry_proto::tonic::common::v1::{AnyValue, KeyValue};
-    use opentelemetry_proto::tonic::metrics::v1::number_data_point::Value;
-    use opentelemetry_proto::tonic::metrics::v1::summary_data_point::ValueAtQuantile;
-    use opentelemetry_proto::tonic::metrics::v1::{HistogramDataPoint, NumberDataPoint};
+    use otel_arrow_rust::proto::opentelemetry::common::v1::any_value::Value as Val;
+    use otel_arrow_rust::proto::opentelemetry::common::v1::AnyValue;
+    use otel_arrow_rust::proto::opentelemetry::metrics::v1::number_data_point::Value;
+    use otel_arrow_rust::proto::opentelemetry::metrics::v1::summary_data_point::ValueAtQuantile;
+    use otel_arrow_rust::proto::opentelemetry::metrics::v1::{
+        AggregationTemporality, HistogramDataPoint, NumberDataPoint, SummaryDataPoint,
+    };
 
     use super::*;
 

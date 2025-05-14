@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use std::fmt;
+use std::fmt::Formatter;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
@@ -120,6 +121,10 @@ impl PhysicalExpr for PreCompiledMatchesTermExpr {
             finder: self.finder.clone(),
         }))
     }
+
+    fn fmt_sql(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self)
+    }
 }
 
 /// Optimizer rule that pre-compiles constant term in `matches_term` function.
@@ -218,13 +223,14 @@ mod tests {
     use common_function::scalars::matches_term::MatchesTermFunction;
     use common_function::scalars::udf::create_udf;
     use common_function::state::FunctionState;
+    use datafusion::datasource::memory::MemorySourceConfig;
+    use datafusion::datasource::source::DataSourceExec;
     use datafusion::physical_optimizer::PhysicalOptimizerRule;
     use datafusion::physical_plan::filter::FilterExec;
     use datafusion::physical_plan::get_plan_string;
-    use datafusion::physical_plan::memory::MemoryExec;
-    use datafusion_common::{Column, DFSchema, ScalarValue};
+    use datafusion_common::{Column, DFSchema};
     use datafusion_expr::expr::ScalarFunction;
-    use datafusion_expr::{Expr, ScalarUDF};
+    use datafusion_expr::{Expr, Literal, ScalarUDF};
     use datafusion_physical_expr::{create_physical_expr, ScalarFunctionExpr};
     use datatypes::prelude::ConcreteDataType;
     use datatypes::schema::ColumnSchema;
@@ -317,18 +323,16 @@ mod tests {
         let predicate = create_physical_expr(
             &Expr::ScalarFunction(ScalarFunction::new_udf(
                 matches_term_udf(),
-                vec![
-                    Expr::Column(Column::from_name("text")),
-                    Expr::Literal(ScalarValue::Utf8(Some("hello".to_string()))),
-                ],
+                vec![Expr::Column(Column::from_name("text")), "hello".lit()],
             )),
             &DFSchema::try_from(batch.schema().clone()).unwrap(),
             &Default::default(),
         )
         .unwrap();
 
-        let input =
-            Arc::new(MemoryExec::try_new(&[vec![batch.clone()]], batch.schema(), None).unwrap());
+        let input = DataSourceExec::from_data_source(
+            MemorySourceConfig::try_new(&[vec![batch.clone()]], batch.schema(), None).unwrap(),
+        );
         let filter = FilterExec::try_new(predicate, input).unwrap();
 
         // Apply the optimizer
@@ -367,8 +371,9 @@ mod tests {
         )
         .unwrap();
 
-        let input =
-            Arc::new(MemoryExec::try_new(&[vec![batch.clone()]], batch.schema(), None).unwrap());
+        let input = DataSourceExec::from_data_source(
+            MemorySourceConfig::try_new(&[vec![batch.clone()]], batch.schema(), None).unwrap(),
+        );
         let filter = FilterExec::try_new(predicate, input).unwrap();
 
         let optimizer = MatchesConstantTermOptimizer;
