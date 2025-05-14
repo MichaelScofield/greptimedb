@@ -39,7 +39,7 @@ use operator::insert::Inserter;
 use operator::statement::StatementExecutor;
 use partition::manager::PartitionRuleManager;
 use query::{QueryEngine, QueryEngineFactory};
-use servers::error::{StartGrpcSnafu, TcpBindSnafu, TcpIncomingSnafu};
+use servers::error::{StartGrpcSnafu, TcpBindSnafu};
 use servers::http::HttpServerBuilder;
 use servers::metrics_handler::MetricsHandler;
 use servers::server::{ServerHandler, ServerHandlers};
@@ -238,8 +238,7 @@ impl servers::server::Server for FlownodeServer {
                 .await
                 .context(TcpBindSnafu { addr })?;
             let addr = listener.local_addr().context(TcpBindSnafu { addr })?;
-            let incoming =
-                TcpIncoming::from_listener(listener, true, None).context(TcpIncomingSnafu)?;
+            let incoming = TcpIncoming::from(listener).with_nodelay(Some(true));
             info!("flow server is bound to {}", addr);
 
             incoming

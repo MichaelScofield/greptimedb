@@ -37,8 +37,7 @@ use datafusion::physical_optimizer::PhysicalOptimizerRule;
 use datafusion::physical_plan::ExecutionPlan;
 use datafusion::physical_planner::{DefaultPhysicalPlanner, ExtensionPlanner, PhysicalPlanner};
 use datafusion_expr::LogicalPlan as DfLogicalPlan;
-use datafusion_optimizer::analyzer::count_wildcard_rule::CountWildcardRule;
-use datafusion_optimizer::analyzer::{Analyzer, AnalyzerRule};
+use datafusion_optimizer::analyzer::Analyzer;
 use datafusion_optimizer::optimizer::Optimizer;
 use promql::extension_plan::PromExtensionPlanner;
 use table::table::adapter::DfTableProviderAdapter;
@@ -118,9 +117,6 @@ impl QueryEngineState {
         let mut analyzer = Analyzer::new();
         analyzer.rules.insert(0, Arc::new(TranscribeAtatRule));
         analyzer.rules.insert(0, Arc::new(StringNormalizationRule));
-
-        // Use our custom rule instead to optimize the count(*) query
-        Self::remove_analyzer_rule(&mut analyzer.rules, CountWildcardRule {}.name());
         analyzer
             .rules
             .insert(0, Arc::new(CountWildcardToTimeIndexRule));
@@ -187,10 +183,6 @@ impl QueryEngineState {
             plugins,
             udf_functions: Arc::new(RwLock::new(HashMap::new())),
         }
-    }
-
-    fn remove_analyzer_rule(rules: &mut Vec<Arc<dyn AnalyzerRule + Send + Sync>>, name: &str) {
-        rules.retain(|rule| rule.name() != name);
     }
 
     fn remove_physical_optimizer_rule(

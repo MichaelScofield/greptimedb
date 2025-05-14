@@ -292,7 +292,9 @@ impl ExecutionPlan for UnionDistinctOnExec {
 impl DisplayAs for UnionDistinctOnExec {
     fn fmt_as(&self, t: DisplayFormatType, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match t {
-            DisplayFormatType::Default | DisplayFormatType::Verbose => {
+            DisplayFormatType::Default
+            | DisplayFormatType::Verbose
+            | DisplayFormatType::TreeRender => {
                 write!(
                     f,
                     "UnionDistinctOnExec: on col=[{:?}], ts_col=[{}]",

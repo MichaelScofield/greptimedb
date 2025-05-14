@@ -24,10 +24,8 @@ use std::convert::Infallible;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use bytes::Bytes;
-use http_body_util::{BodyExt, Full};
-use tonic::body::BoxBody;
-use tonic::codegen::{empty_body, http, BoxFuture, Service};
+use tonic::body::Body;
+use tonic::codegen::{http, BoxFuture, Service};
 use tonic::server::NamedService;
 
 use crate::metasrv::Metasrv;
@@ -101,7 +99,7 @@ impl<T> Service<http::Request<T>> for Admin
 where
     T: Send,
 {
-    type Response = http::Response<BoxBody>;
+    type Response = http::Response<Body>;
     type Error = Infallible;
     type Future = BoxFuture<Self::Response, Self::Error>;
 
@@ -163,22 +161,22 @@ impl Router {
         path: &str,
         method: http::Method,
         params: HashMap<String, String>,
-    ) -> Result<http::Response<BoxBody>, Infallible> {
+    ) -> Result<http::Response<Body>, Infallible> {
         let handler = match self.handlers.get(path) {
             Some(handler) => handler,
             None => {
                 return Ok(http::Response::builder()
                     .status(http::StatusCode::NOT_FOUND)
-                    .body(empty_body())
+                    .body(Body::empty())
                     .unwrap())
             }
         };
 
         let res = match handler.handle(path, method, &params).await {
-            Ok(res) => res.map(boxed),
+            Ok(res) => res.map(Body::new),
             Err(e) => http::Response::builder()
                 .status(http::StatusCode::INTERNAL_SERVER_ERROR)
-                .body(boxed(e.to_string()))
+                .body(Body::new(e.to_string()))
                 .unwrap(),
         };
 
@@ -190,14 +188,6 @@ fn check_path(path: &str) {
     if path.is_empty() || !path.starts_with('/') {
         panic!("paths must start with a `/`")
     }
-}
-
-/// Returns a [BoxBody] from a string.
-/// The implementation follows [empty_body()].
-fn boxed(body: String) -> BoxBody {
-    Full::new(Bytes::from(body))
-        .map_err(|err| match err {})
-        .boxed_unsync()
 }
 
 #[cfg(test)]

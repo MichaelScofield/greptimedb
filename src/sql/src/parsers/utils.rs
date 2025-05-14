@@ -105,7 +105,7 @@ impl ContextProvider for StubContextProvider {
     }
 
     fn options(&self) -> &ConfigOptions {
-        unimplemented!()
+        self.state.config_options()
     }
 
     fn udf_names(&self) -> Vec<String> {

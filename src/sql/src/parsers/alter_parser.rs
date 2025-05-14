@@ -135,7 +135,7 @@ impl ParserContext<'_> {
                             let new_table_name_obj =
                                 Self::canonicalize_object_name(new_table_name_obj_raw);
                             let new_table_name = match &new_table_name_obj.0[..] {
-                                [table] => table.value.clone(),
+                                [table] => table.to_string(),
                                 _ => {
                                     return Err(ParserError::ParserError(format!(
                                         "expect table name, actual: {new_table_name_obj}"
@@ -460,7 +460,7 @@ mod tests {
         assert_matches!(statement, Statement::AlterDatabase { .. });
         match statement {
             Statement::AlterDatabase(alter_database) => {
-                assert_eq!("test_db", alter_database.database_name().0[0].value);
+                assert_eq!("test_db", alter_database.database_name().0[0].to_string());
 
                 let alter_operation = alter_database.alter_operation();
                 assert_matches!(
@@ -489,7 +489,7 @@ mod tests {
         assert_matches!(statement, Statement::AlterDatabase { .. });
         match statement {
             Statement::AlterDatabase(alter_database) => {
-                assert_eq!("test_db", alter_database.database_name().0[0].value);
+                assert_eq!("test_db", alter_database.database_name().0[0].to_string());
                 let alter_operation = alter_database.alter_operation();
                 assert_matches!(
                     alter_operation,
@@ -520,7 +520,7 @@ mod tests {
         assert_matches!(statement, Statement::AlterTable { .. });
         match statement {
             Statement::AlterTable(alter_table) => {
-                assert_eq!("my_metric_1", alter_table.table_name().0[0].value);
+                assert_eq!("my_metric_1", alter_table.table_name().0[0].to_string());
 
                 let alter_operation = alter_table.alter_operation();
                 assert_matches!(alter_operation, AlterTableOperation::AddColumns { .. });
@@ -555,7 +555,7 @@ mod tests {
         assert_matches!(statement, Statement::AlterTable { .. });
         match statement {
             Statement::AlterTable(alter_table) => {
-                assert_eq!("my_metric_1", alter_table.table_name().0[0].value);
+                assert_eq!("my_metric_1", alter_table.table_name().0[0].to_string());
 
                 let alter_operation = alter_table.alter_operation();
                 assert_matches!(alter_operation, AlterTableOperation::AddColumns { .. });
@@ -590,7 +590,7 @@ mod tests {
         assert_matches!(statement, Statement::AlterTable { .. });
         match statement {
             Statement::AlterTable(alter_table) => {
-                assert_eq!("my_metric_1", alter_table.table_name().0[0].value);
+                assert_eq!("my_metric_1", alter_table.table_name().0[0].to_string());
 
                 let alter_operation = alter_table.alter_operation();
                 assert_matches!(alter_operation, AlterTableOperation::AddColumns { .. });
@@ -608,7 +608,6 @@ mod tests {
                                         name: None,
                                         option: ColumnOption::Null,
                                     }],
-                                    collation: None,
                                 },
                             ),
                             (
@@ -617,7 +616,6 @@ mod tests {
                                     name: Ident::new("tagl_i"),
                                     data_type: DataType::String(None),
                                     options: vec![],
-                                    collation: None,
                                 },
                             ),
                         ];
@@ -648,7 +646,7 @@ mod tests {
         assert_matches!(statement, Statement::AlterTable { .. });
         match statement {
             Statement::AlterTable(alter) => {
-                assert_eq!(alter.table_name.0[0].value, "test");
+                assert_eq!(alter.table_name.0[0].to_string(), "test");
                 assert_matches!(
                     alter.alter_operation,
                     AlterTableOperation::AddColumns { .. }
@@ -660,7 +658,6 @@ mod tests {
                                 column_def: ColumnDef {
                                     name: Ident::new("a"),
                                     data_type: DataType::Integer(None),
-                                    collation: None,
                                     options: vec![],
                                 },
                                 location: None,
@@ -670,7 +667,6 @@ mod tests {
                                 column_def: ColumnDef {
                                     name: Ident::new("b"),
                                     data_type: DataType::String(None),
-                                    collation: None,
                                     options: vec![],
                                 },
                                 location: None,
@@ -680,7 +676,6 @@ mod tests {
                                 column_def: ColumnDef {
                                     name: Ident::new("c"),
                                     data_type: DataType::Int(None),
-                                    collation: None,
                                     options: vec![],
                                 },
                                 location: None,
@@ -720,7 +715,7 @@ mod tests {
         assert_matches!(statement, Statement::AlterTable { .. });
         match statement {
             Statement::AlterTable(alter_table) => {
-                assert_eq!("my_metric_1", alter_table.table_name().0[0].value);
+                assert_eq!("my_metric_1", alter_table.table_name().0[0].to_string());
 
                 let alter_operation = alter_table.alter_operation();
                 assert_matches!(alter_operation, AlterTableOperation::DropColumn { .. });
@@ -759,7 +754,7 @@ mod tests {
         assert_matches!(statement, Statement::AlterTable { .. });
         match statement {
             Statement::AlterTable(alter_table) => {
-                assert_eq!("my_metric_1", alter_table.table_name().0[0].value);
+                assert_eq!("my_metric_1", alter_table.table_name().0[0].to_string());
 
                 let alter_operation = alter_table.alter_operation();
                 assert_matches!(
@@ -793,7 +788,7 @@ mod tests {
 
         match result_1.remove(0) {
             Statement::AlterTable(alter_table) => {
-                assert_eq!("my_metric_1", alter_table.table_name().0[0].value);
+                assert_eq!("my_metric_1", alter_table.table_name().0[0].to_string());
 
                 let alter_operation = alter_table.alter_operation();
                 assert_matches!(
@@ -824,7 +819,7 @@ mod tests {
 
         match result_2.remove(0) {
             Statement::AlterTable(alter_table) => {
-                assert_eq!("my_metric_1", alter_table.table_name().0[0].value);
+                assert_eq!("my_metric_1", alter_table.table_name().0[0].to_string());
 
                 let alter_operation = alter_table.alter_operation();
                 assert_matches!(
@@ -865,7 +860,7 @@ mod tests {
         assert_matches!(statement, Statement::AlterTable { .. });
         match statement {
             Statement::AlterTable(alter_table) => {
-                assert_eq!("test_table", alter_table.table_name().0[0].value);
+                assert_eq!("test_table", alter_table.table_name().0[0].to_string());
 
                 let alter_operation = alter_table.alter_operation();
                 assert_matches!(alter_operation, AlterTableOperation::RenameTable { .. });
@@ -888,7 +883,7 @@ mod tests {
         let Statement::AlterTable(alter) = &result[0] else {
             unreachable!()
         };
-        assert_eq!("test_table", alter.table_name.0[0].value);
+        assert_eq!("test_table", alter.table_name.0[0].to_string());
         let AlterTableOperation::SetTableOptions { options } = &alter.alter_operation else {
             unreachable!()
         };
@@ -909,7 +904,7 @@ mod tests {
         let Statement::AlterTable(alter) = &result[0] else {
             unreachable!()
         };
-        assert_eq!("test_table", alter.table_name.0[0].value);
+        assert_eq!("test_table", alter.table_name.0[0].to_string());
         let AlterTableOperation::UnsetTableOptions { keys } = &alter.alter_operation else {
             unreachable!()
         };
@@ -964,7 +959,7 @@ mod tests {
         assert_matches!(statement, Statement::AlterTable { .. });
         match statement {
             Statement::AlterTable(alter_table) => {
-                assert_eq!("test_table", alter_table.table_name().0[0].value);
+                assert_eq!("test_table", alter_table.table_name().0[0].to_string());
 
                 let alter_operation = alter_table.alter_operation();
                 match alter_operation {
@@ -1001,7 +996,7 @@ mod tests {
         assert_matches!(statement, Statement::AlterTable { .. });
         match statement {
             Statement::AlterTable(alter_table) => {
-                assert_eq!("test_table", alter_table.table_name().0[0].value);
+                assert_eq!("test_table", alter_table.table_name().0[0].to_string());
 
                 let alter_operation = alter_table.alter_operation();
                 assert_eq!(
@@ -1043,7 +1038,7 @@ mod tests {
         assert_matches!(statement, Statement::AlterTable { .. });
         match statement {
             Statement::AlterTable(alter_table) => {
-                assert_eq!("test_table", alter_table.table_name().0[0].value);
+                assert_eq!("test_table", alter_table.table_name().0[0].to_string());
 
                 let alter_operation = alter_table.alter_operation();
                 match alter_operation {
@@ -1065,7 +1060,7 @@ mod tests {
         assert_matches!(statement, Statement::AlterTable { .. });
         match statement {
             Statement::AlterTable(alter_table) => {
-                assert_eq!("test_table", alter_table.table_name().0[0].value);
+                assert_eq!("test_table", alter_table.table_name().0[0].to_string());
 
                 let alter_operation = alter_table.alter_operation();
                 assert_eq!(

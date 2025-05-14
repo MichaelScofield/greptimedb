@@ -33,7 +33,7 @@ use query::parser::QueryLanguageParser;
 use query::QueryEngineRef;
 use session::context::QueryContextRef;
 use snafu::{OptionExt, ResultExt};
-use table::metadata::TableInfo;
+use table::TableRef;
 
 use crate::adapter::AUTO_CREATED_PLACEHOLDER_TS_COL;
 use crate::df_optimizer::apply_df_optimizer;
@@ -43,7 +43,7 @@ use crate::{Error, TableName};
 pub async fn get_table_info_df_schema(
     catalog_mr: CatalogManagerRef,
     table_name: TableName,
-) -> Result<(Arc<TableInfo>, Arc<DFSchema>), Error> {
+) -> Result<(TableRef, Arc<DFSchema>), Error> {
     let full_table_name = table_name.clone().join(".");
     let table = catalog_mr
         .table(&table_name[0], &table_name[1], &table_name[2], None)
@@ -53,7 +53,7 @@ pub async fn get_table_info_df_schema(
         .context(TableNotFoundSnafu {
             name: &full_table_name,
         })?;
-    let table_info = table.table_info().clone();
+    let table_info = table.table_info();
 
     let schema = table_info.meta.schema.clone();
 
@@ -69,7 +69,7 @@ pub async fn get_table_info_df_schema(
                 ),
             })?,
     );
-    Ok((table_info, df_schema))
+    Ok((table, df_schema))
 }
 
 /// Convert sql to datafusion logical plan

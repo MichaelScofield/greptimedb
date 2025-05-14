@@ -545,6 +545,7 @@ impl RangeSelect {
                 // At this time, aggregate plan has been replaced by a custom range plan,
                 // so `CountWildcardRule` has not been applied.
                 // We manually modify it when creating the physical plan.
+                #[allow(deprecated)]
                 Expr::Wildcard { .. } if is_count_aggr => create_physical_expr(
                     &lit(COUNT_STAR_EXPANSION),
                     df_schema.as_ref(),
@@ -590,7 +591,7 @@ impl RangeSelect {
                         if (aggr.func.name() == "last_value"
                             || aggr.func.name() == "first_value") =>
                     {
-                        let order_by = if let Some(exprs) = &aggr.order_by {
+                        let order_by = if let Some(exprs) = &aggr.params.order_by {
                             exprs
                                 .iter()
                                 .map(|x| {
@@ -618,7 +619,7 @@ impl RangeSelect {
                         };
                         let arg = self.create_physical_expr_list(
                             false,
-                            &aggr.args,
+                            &aggr.params.args,
                             input_dfschema,
                             session_state,
                         )?;
@@ -632,7 +633,7 @@ impl RangeSelect {
                             .build()
                     }
                     Expr::AggregateFunction(aggr) => {
-                        let order_by = if let Some(exprs) = &aggr.order_by {
+                        let order_by = if let Some(exprs) = &aggr.params.order_by {
                             exprs
                                 .iter()
                                 .map(|x| {
@@ -646,12 +647,12 @@ impl RangeSelect {
                         } else {
                             vec![]
                         };
-                        let distinct = aggr.distinct;
+                        let distinct = aggr.params.distinct;
                         // TODO(discord9): add default null treatment?
 
                         let input_phy_exprs = self.create_physical_expr_list(
                             aggr.func.name() == "count",
-                            &aggr.args,
+                            &aggr.params.args,
                             input_dfschema,
                             session_state,
                         )?;
@@ -766,7 +767,9 @@ pub struct RangeSelectExec {
 impl DisplayAs for RangeSelectExec {
     fn fmt_as(&self, t: DisplayFormatType, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match t {
-            DisplayFormatType::Default | DisplayFormatType::Verbose => {
+            DisplayFormatType::Default
+            | DisplayFormatType::Verbose
+            | DisplayFormatType::TreeRender => {
                 write!(f, "RangeSelectExec: ")?;
                 let range_expr_strs: Vec<String> =
                     self.range_exec.iter().map(RangeFnExec::to_string).collect();
@@ -1244,8 +1247,9 @@ mod test {
     use datafusion::arrow::datatypes::{
         ArrowPrimitiveType, DataType, Field, Schema, TimestampMillisecondType,
     };
+    use datafusion::datasource::memory::MemorySourceConfig;
+    use datafusion::datasource::source::DataSourceExec;
     use datafusion::functions_aggregate::min_max;
-    use datafusion::physical_plan::memory::MemoryExec;
     use datafusion::physical_plan::sorts::sort::SortExec;
     use datafusion::prelude::SessionContext;
     use datafusion_physical_expr::expressions::Column;
@@ -1257,7 +1261,7 @@ mod test {
 
     const TIME_INDEX_COLUMN: &str = "timestamp";
 
-    fn prepare_test_data(is_float: bool, is_gap: bool) -> MemoryExec {
+    fn prepare_test_data(is_float: bool, is_gap: bool) -> DataSourceExec {
         let schema = Arc::new(Schema::new(vec![
             Field::new(TIME_INDEX_COLUMN, TimestampMillisecondType::DATA_TYPE, true),
             Field::new(
@@ -1307,7 +1311,9 @@ mod test {
         )
         .unwrap();
 
-        MemoryExec::try_new(&[vec![data]], schema, None).unwrap()
+        DataSourceExec::new(Arc::new(
+            MemorySourceConfig::try_new(&[vec![data]], schema, None).unwrap(),
+        ))
     }
 
     async fn do_range_select_test(

@@ -113,6 +113,7 @@ mod tests {
 
     use common_query::prelude::ScalarValue;
     use datafusion::arrow::array::BooleanArray;
+    use datatypes::arrow::datatypes::Field;
     use datatypes::data_type::ConcreteDataType;
     use datatypes::prelude::VectorRef;
     use datatypes::vectors::{BooleanVector, ConstantVector};
@@ -162,10 +163,20 @@ mod tests {
             ]))),
         ];
 
+        let arg_field = vec![
+            Field::new("a", args[0].data_type(), false),
+            Field::new("b", args[1].data_type(), false),
+        ];
+        let return_field = &Field::new(
+            "x",
+            ConcreteDataType::boolean_datatype().as_arrow_type(),
+            false,
+        );
         let args = ScalarFunctionArgs {
             args,
+            arg_fields: arg_field.iter().collect(),
             number_rows: 4,
-            return_type: &ConcreteDataType::boolean_datatype().as_arrow_type(),
+            return_field,
         };
         match udf.invoke_with_args(args).unwrap() {
             datafusion_expr::ColumnarValue::Array(x) => {

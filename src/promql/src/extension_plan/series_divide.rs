@@ -248,7 +248,9 @@ impl ExecutionPlan for SeriesDivideExec {
 impl DisplayAs for SeriesDivideExec {
     fn fmt_as(&self, t: DisplayFormatType, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match t {
-            DisplayFormatType::Default | DisplayFormatType::Verbose => {
+            DisplayFormatType::Default
+            | DisplayFormatType::Verbose
+            | DisplayFormatType::TreeRender => {
                 write!(f, "PromSeriesDivideExec: tags={:?}", self.tag_columns)
             }
         }
@@ -459,12 +461,13 @@ impl SeriesDivideStream {
 #[cfg(test)]
 mod test {
     use datafusion::arrow::datatypes::{DataType, Field, Schema};
-    use datafusion::physical_plan::memory::MemoryExec;
+    use datafusion::datasource::memory::MemorySourceConfig;
+    use datafusion::datasource::source::DataSourceExec;
     use datafusion::prelude::SessionContext;
 
     use super::*;
 
-    fn prepare_test_data() -> MemoryExec {
+    fn prepare_test_data() -> DataSourceExec {
         let schema = Arc::new(Schema::new(vec![
             Field::new("host", DataType::Utf8, true),
             Field::new("path", DataType::Utf8, true),
@@ -494,7 +497,9 @@ mod test {
         let data_3 =
             RecordBatch::try_new(schema.clone(), vec![path_column_3, host_column_3]).unwrap();
 
-        MemoryExec::try_new(&[vec![data_1, data_2, data_3]], schema, None).unwrap()
+        DataSourceExec::new(Arc::new(
+            MemorySourceConfig::try_new(&[vec![data_1, data_2, data_3]], schema, None).unwrap(),
+        ))
     }
 
     #[tokio::test]
@@ -714,8 +719,8 @@ mod test {
         .unwrap();
 
         // Create MemoryExec with these batches, keeping same combinations adjacent
-        let memory_exec = Arc::new(
-            MemoryExec::try_new(
+        let memory_exec = DataSourceExec::from_data_source(
+            MemorySourceConfig::try_new(
                 &[vec![batch1, batch2, batch3, batch4, batch5, batch6]],
                 schema.clone(),
                 None,

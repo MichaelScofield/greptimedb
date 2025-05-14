@@ -242,6 +242,7 @@ impl PartSortStream {
                 TopK::try_new(
                     partition,
                     sort.schema().clone(),
+                    LexOrdering::new(vec![]),
                     LexOrdering::new(vec![sort.expression.clone()]),
                     limit,
                     context.session_config().batch_size(),
@@ -495,6 +496,7 @@ impl PartSortStream {
         let new_top_buffer = TopK::try_new(
             self.partition,
             self.schema().clone(),
+            LexOrdering::new(vec![]),
             LexOrdering::new(vec![self.expression.clone()]),
             self.limit.unwrap(),
             self.context.session_config().batch_size(),

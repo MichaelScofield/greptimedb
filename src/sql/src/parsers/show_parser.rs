@@ -217,9 +217,7 @@ impl ParserContext<'_> {
         );
 
         // Safety: already checked above
-        Ok(Self::canonicalize_object_name(table_name).0[0]
-            .value
-            .clone())
+        Ok(Self::canonicalize_object_name(table_name).0[0].to_string())
     }
 
     fn parse_db_name(&mut self) -> Result<Option<String>> {
@@ -240,7 +238,7 @@ impl ParserContext<'_> {
 
         // Safety: already checked above
         Ok(Some(
-            Self::canonicalize_object_name(db_name).0[0].value.clone(),
+            Self::canonicalize_object_name(db_name).0[0].to_string(),
         ))
     }
 
@@ -846,7 +844,7 @@ mod tests {
         assert_eq!(
             stmts[0],
             Statement::ShowVariables(ShowVariables {
-                variable: ObjectName(vec![Ident::new("system_time_zone")]),
+                variable: ObjectName::from(vec![Ident::new("system_time_zone")]),
             })
         );
     }
@@ -1132,7 +1130,7 @@ mod tests {
         assert_eq!(
             stmts[0],
             Statement::ShowCreateView(ShowCreateView {
-                view_name: ObjectName(vec![Ident::new("test")]),
+                view_name: ObjectName::from(vec![Ident::new("test")]),
             })
         );
         assert_eq!(sql, stmts[0].to_string());

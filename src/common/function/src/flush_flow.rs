@@ -85,9 +85,9 @@ fn parse_flush_flow(
     let (catalog_name, flow_name) = match &obj_name.0[..] {
         [flow_name] => (
             query_ctx.current_catalog().to_string(),
-            flow_name.value.clone(),
+            flow_name.to_string(),
         ),
-        [catalog, flow_name] => (catalog.value.clone(), flow_name.value.clone()),
+        [catalog, flow_name] => (catalog.to_string(), flow_name.to_string()),
         _ => {
             return InvalidFuncArgsSnafu {
                 err_msg: format!(

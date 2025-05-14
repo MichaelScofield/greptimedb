@@ -577,11 +577,8 @@ fn validate_param(name: &ObjectName, query_ctx: &QueryContextRef) -> Result<()> 
 
 fn validate_database(name: &ObjectName, query_ctx: &QueryContextRef) -> Result<()> {
     let (catalog, schema) = match &name.0[..] {
-        [schema] => (
-            query_ctx.current_catalog().to_string(),
-            schema.value.clone(),
-        ),
-        [catalog, schema] => (catalog.value.clone(), schema.value.clone()),
+        [schema] => (query_ctx.current_catalog().to_string(), schema.to_string()),
+        [catalog, schema] => (catalog.to_string(), schema.to_string()),
         _ => InvalidSqlSnafu {
             err_msg: format!(
                 "expect database name to be <catalog>.<schema> or <schema>, actual: {name}",

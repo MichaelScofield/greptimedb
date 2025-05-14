@@ -29,7 +29,6 @@ use datafusion::optimizer::analyzer::type_coercion::TypeCoercion;
 use datafusion::optimizer::common_subexpr_eliminate::CommonSubexprEliminate;
 use datafusion::optimizer::optimize_projections::OptimizeProjections;
 use datafusion::optimizer::simplify_expressions::SimplifyExpressions;
-use datafusion::optimizer::unwrap_cast_in_comparison::UnwrapCastInComparison;
 use datafusion::optimizer::utils::NamePreserver;
 use datafusion::optimizer::{Analyzer, AnalyzerRule, Optimizer, OptimizerContext};
 use datafusion_common::tree_node::{
@@ -80,7 +79,6 @@ pub async fn apply_df_optimizer(
         Arc::new(OptimizeProjections::new()),
         Arc::new(CommonSubexprEliminate::new()),
         Arc::new(SimplifyExpressions::new()),
-        Arc::new(UnwrapCastInComparison::new()),
     ]);
     let plan = optimizer
         .optimize(plan, &ctx, |_, _| {})

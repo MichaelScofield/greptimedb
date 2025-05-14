@@ -183,9 +183,7 @@ pub async fn bootstrap_metasrv_with_router(
 
     info!("gRPC server is bound to: {bind_addr}");
 
-    let incoming =
-        TcpIncoming::from_listener(listener, true, None).context(error::TcpIncomingSnafu)?;
-
+    let incoming = TcpIncoming::from(listener).with_nodelay(Some(true));
     router
         .serve_with_incoming_shutdown(incoming, async {
             let _ = signal.recv().await;

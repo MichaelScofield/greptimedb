@@ -41,6 +41,7 @@ use datafusion::prelude as df_prelude;
 use datafusion::prelude::{Column, Expr as DfExpr, JoinType};
 use datafusion::scalar::ScalarValue;
 use datafusion::sql::TableReference;
+use datafusion_expr::expr::WindowFunctionParams;
 use datafusion_expr::utils::conjunction;
 use datafusion_expr::{col, lit, SortExpr};
 use datatypes::arrow::datatypes::{DataType as ArrowDataType, TimeUnit as ArrowTimeUnit};
@@ -1309,6 +1310,7 @@ impl PromPlanner {
                             table: table_ref.to_quoted_string(),
                         })?
                         .clone(),
+                    metadata: None,
                 })))
                 .collect::<Vec<_>>();
             scan_plan = LogicalPlanBuilder::from(scan_plan)
@@ -2071,11 +2073,13 @@ impl PromPlanner {
 
                 DfExpr::WindowFunction(WindowFunction {
                     fun: WindowFunctionDefinition::WindowUDF(Arc::new(RowNumber::new().into())),
-                    args: vec![],
-                    partition_by: group_exprs.clone(),
-                    order_by: sort_exprs,
-                    window_frame: WindowFrame::new(Some(true)),
-                    null_treatment: None,
+                    params: WindowFunctionParams {
+                        args: vec![],
+                        partition_by: group_exprs.clone(),
+                        order_by: sort_exprs,
+                        window_frame: WindowFrame::new(Some(true)),
+                        null_treatment: None,
+                    },
                 })
             })
             .collect();
