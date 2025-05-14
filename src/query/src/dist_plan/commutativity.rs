@@ -154,6 +154,7 @@ impl Categorizer {
     }
 
     pub fn check_expr(expr: &Expr) -> Commutativity {
+        #[allow(deprecated)]
         match expr {
             Expr::Column(_)
             | Expr::ScalarVariable(_, _)

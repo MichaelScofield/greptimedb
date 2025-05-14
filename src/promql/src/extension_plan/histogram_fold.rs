@@ -414,7 +414,9 @@ impl HistogramFoldExec {
 impl DisplayAs for HistogramFoldExec {
     fn fmt_as(&self, t: DisplayFormatType, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match t {
-            DisplayFormatType::Default | DisplayFormatType::Verbose => {
+            DisplayFormatType::Default
+            | DisplayFormatType::Verbose
+            | DisplayFormatType::TreeRender => {
                 write!(
                     f,
                     "HistogramFoldExec: le=@{}, field=@{}, quantile={}",
@@ -729,13 +731,14 @@ mod test {
     use datafusion::arrow::array::Float64Array;
     use datafusion::arrow::datatypes::{Field, Schema};
     use datafusion::common::ToDFSchema;
-    use datafusion::physical_plan::memory::MemoryExec;
+    use datafusion::datasource::memory::MemorySourceConfig;
+    use datafusion::datasource::source::DataSourceExec;
     use datafusion::prelude::SessionContext;
     use datatypes::arrow_array::StringArray;
 
     use super::*;
 
-    fn prepare_test_data() -> MemoryExec {
+    fn prepare_test_data() -> DataSourceExec {
         let schema = Arc::new(Schema::new(vec![
             Field::new("host", DataType::Utf8, true),
             Field::new("le", DataType::Utf8, true),
@@ -788,7 +791,9 @@ mod test {
         )
         .unwrap();
 
-        MemoryExec::try_new(&[vec![data_1, data_2, data_3]], schema, None).unwrap()
+        DataSourceExec::new(Arc::new(
+            MemorySourceConfig::try_new(&[vec![data_1, data_2, data_3]], schema, None).unwrap(),
+        ))
     }
 
     #[tokio::test]

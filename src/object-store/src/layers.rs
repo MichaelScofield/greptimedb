@@ -41,7 +41,7 @@ mod prometheus {
                 // TODO(shuiyisong): add dynamic path label trim for opendal
 
                 let layer = PrometheusLayer::builder()
-                    .path_label(0)
+                    // .path_label(0)
                     .register_default()
                     .unwrap();
 

@@ -482,6 +482,7 @@ impl RangePlanRewriter {
     /// If the user does not explicitly use the `by` keyword to indicate time series,
     /// `[row_columns]` will be use as default time series
     async fn get_index_by(&mut self, schema: &Arc<DFSchema>) -> Result<(Expr, Vec<Expr>)> {
+        #[allow(deprecated)]
         let mut time_index_expr = Expr::Wildcard {
             qualifier: None,
             options: Box::new(WildcardOptions::default()),
@@ -531,6 +532,7 @@ impl RangePlanRewriter {
                 }
             }
         }
+        #[allow(deprecated)]
         if matches!(time_index_expr, Expr::Wildcard { .. }) {
             TimeIndexNotFoundSnafu {
                 table: schema.to_string(),

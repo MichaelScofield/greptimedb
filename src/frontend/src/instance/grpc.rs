@@ -29,6 +29,7 @@ use common_grpc::FlightData;
 use common_query::logical_plan::add_insert_to_logical_plan;
 use common_query::Output;
 use common_telemetry::tracing::{self};
+use datafusion::datasource::DefaultTableSource;
 use query::parser::PromQuery;
 use servers::interceptor::{GrpcQueryInterceptor, GrpcQueryInterceptorRef};
 use servers::query_handler::grpc::GrpcQueryHandler;
@@ -36,11 +37,12 @@ use servers::query_handler::sql::SqlQueryHandler;
 use session::context::QueryContextRef;
 use snafu::{ensure, OptionExt, ResultExt};
 use table::metadata::TableId;
+use table::table::adapter::DfTableProviderAdapter;
 use table::table_name::TableName;
 
 use crate::error::{
-    CatalogSnafu, DataFusionSnafu, Error, InFlightWriteBytesExceededSnafu,
-    IncompleteGrpcRequestSnafu, NotSupportedSnafu, PermissionSnafu, PlanStatementSnafu, Result,
+    CatalogSnafu, Error, InFlightWriteBytesExceededSnafu, IncompleteGrpcRequestSnafu,
+    NotSupportedSnafu, PermissionSnafu, PlanStatementSnafu, Result,
     SubstraitDecodeLogicalPlanSnafu, TableNotFoundSnafu, TableOperationSnafu,
 };
 use crate::instance::{attach_timer, Instance};
@@ -367,20 +369,10 @@ impl Instance {
                 ]
                 .join("."),
             })?;
+        let table_provider = Arc::new(DfTableProviderAdapter::new(table));
+        let table_source = Arc::new(DefaultTableSource::new(table_provider));
 
-        let table_info = table.table_info();
-
-        let df_schema = Arc::new(
-            table_info
-                .meta
-                .schema
-                .arrow_schema()
-                .clone()
-                .try_into()
-                .context(DataFusionSnafu)?,
-        );
-
-        let insert_into = add_insert_to_logical_plan(table_name, df_schema, logical_plan)
+        let insert_into = add_insert_to_logical_plan(table_name, table_source, logical_plan)
             .context(SubstraitDecodeLogicalPlanSnafu)?;
 
         let engine_ctx = self.query_engine().engine_context(ctx.clone());

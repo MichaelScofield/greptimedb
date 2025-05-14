@@ -36,10 +36,12 @@ pub(crate) async fn new_oss_object_store(oss_config: &OssConfig) -> Result<Objec
         .bucket(&oss_config.bucket)
         .endpoint(&oss_config.endpoint)
         .access_key_id(oss_config.access_key_id.expose_secret())
-        .access_key_secret(oss_config.access_key_secret.expose_secret())
-        .http_client(client);
+        .access_key_secret(oss_config.access_key_secret.expose_secret());
 
-    Ok(ObjectStore::new(builder)
+    let operator = ObjectStore::new(builder)
         .context(error::InitBackendSnafu)?
-        .finish())
+        .finish();
+
+    operator.update_http_client(|_| client);
+    Ok(operator)
 }

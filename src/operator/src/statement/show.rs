@@ -244,8 +244,8 @@ impl StatementExecutor {
     ) -> Result<Output> {
         let obj_name = &show.flow_name;
         let (catalog_name, flow_name) = match &obj_name.0[..] {
-            [table] => (query_ctx.current_catalog().to_string(), table.value.clone()),
-            [catalog, table] => (catalog.value.clone(), table.value.clone()),
+            [table] => (query_ctx.current_catalog().to_string(), table.to_string()),
+            [catalog, table] => (catalog.to_string(), table.to_string()),
             _ => {
                 return InvalidSqlSnafu {
                     err_msg: format!(

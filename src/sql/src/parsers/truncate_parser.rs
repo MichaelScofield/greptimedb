@@ -61,7 +61,9 @@ mod tests {
                 .unwrap();
         assert_eq!(
             stmts.pop().unwrap(),
-            Statement::TruncateTable(TruncateTable::new(ObjectName(vec![Ident::new("foo")])))
+            Statement::TruncateTable(TruncateTable::new(ObjectName::from(vec![Ident::new(
+                "foo"
+            )])))
         );
 
         let sql = "TRUNCATE TABLE foo";
@@ -70,7 +72,9 @@ mod tests {
                 .unwrap();
         assert_eq!(
             stmts.pop().unwrap(),
-            Statement::TruncateTable(TruncateTable::new(ObjectName(vec![Ident::new("foo")])))
+            Statement::TruncateTable(TruncateTable::new(ObjectName::from(vec![Ident::new(
+                "foo"
+            )])))
         );
 
         let sql = "TRUNCATE TABLE my_schema.foo";
@@ -79,7 +83,7 @@ mod tests {
                 .unwrap();
         assert_eq!(
             stmts.pop().unwrap(),
-            Statement::TruncateTable(TruncateTable::new(ObjectName(vec![
+            Statement::TruncateTable(TruncateTable::new(ObjectName::from(vec![
                 Ident::new("my_schema"),
                 Ident::new("foo")
             ])))
@@ -91,7 +95,7 @@ mod tests {
                 .unwrap();
         assert_eq!(
             stmts.pop().unwrap(),
-            Statement::TruncateTable(TruncateTable::new(ObjectName(vec![
+            Statement::TruncateTable(TruncateTable::new(ObjectName::from(vec![
                 Ident::new("my_schema"),
                 Ident::new("foo")
             ])))
@@ -103,7 +107,7 @@ mod tests {
                 .unwrap();
         assert_eq!(
             stmts.pop().unwrap(),
-            Statement::TruncateTable(TruncateTable::new(ObjectName(vec![
+            Statement::TruncateTable(TruncateTable::new(ObjectName::from(vec![
                 Ident::new("my_catalog"),
                 Ident::new("my_schema"),
                 Ident::new("foo")
@@ -116,7 +120,9 @@ mod tests {
                 .unwrap();
         assert_eq!(
             stmts.pop().unwrap(),
-            Statement::TruncateTable(TruncateTable::new(ObjectName(vec![Ident::new("drop")])))
+            Statement::TruncateTable(TruncateTable::new(ObjectName::from(vec![Ident::new(
+                "drop"
+            )])))
         );
 
         let sql = "TRUNCATE `drop`";
@@ -125,9 +131,9 @@ mod tests {
                 .unwrap();
         assert_eq!(
             stmts.pop().unwrap(),
-            Statement::TruncateTable(TruncateTable::new(ObjectName(vec![Ident::with_quote(
-                '`', "drop"
-            ),])))
+            Statement::TruncateTable(TruncateTable::new(ObjectName::from(vec![
+                Ident::with_quote('`', "drop"),
+            ])))
         );
 
         let sql = "TRUNCATE \"drop\"";
@@ -136,9 +142,9 @@ mod tests {
                 .unwrap();
         assert_eq!(
             stmts.pop().unwrap(),
-            Statement::TruncateTable(TruncateTable::new(ObjectName(vec![Ident::with_quote(
-                '"', "drop"
-            ),])))
+            Statement::TruncateTable(TruncateTable::new(ObjectName::from(vec![
+                Ident::with_quote('"', "drop"),
+            ])))
         );
     }
 

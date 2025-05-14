@@ -102,6 +102,7 @@ impl DfLogicalPlanner {
             support_varchar_with_length: parser_options.support_varchar_with_length,
             enable_options_value_normalization: parser_options.enable_options_value_normalization,
             collect_spans: parser_options.collect_spans,
+            map_varchar_to_utf8view: parser_options.map_varchar_to_utf8view,
         };
 
         let sql_to_rel = SqlToRel::new_with_options(&context_provider, parser_options);
@@ -149,6 +150,7 @@ impl DfLogicalPlanner {
             support_varchar_with_length: parser_options.support_varchar_with_length,
             enable_options_value_normalization: parser_options.enable_options_value_normalization,
             collect_spans: parser_options.collect_spans,
+            map_varchar_to_utf8view: parser_options.map_varchar_to_utf8view,
         };
 
         let sql_to_rel = SqlToRel::new_with_options(&context_provider, parser_options);

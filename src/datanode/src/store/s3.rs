@@ -36,8 +36,7 @@ pub(crate) async fn new_s3_object_store(s3_config: &S3Config) -> Result<ObjectSt
         .root(&root)
         .bucket(&s3_config.bucket)
         .access_key_id(s3_config.access_key_id.expose_secret())
-        .secret_access_key(s3_config.secret_access_key.expose_secret())
-        .http_client(client);
+        .secret_access_key(s3_config.secret_access_key.expose_secret());
 
     if s3_config.endpoint.is_some() {
         builder = builder.endpoint(s3_config.endpoint.as_ref().unwrap());
@@ -49,7 +48,10 @@ pub(crate) async fn new_s3_object_store(s3_config: &S3Config) -> Result<ObjectSt
         builder = builder.enable_virtual_host_style();
     }
 
-    Ok(ObjectStore::new(builder)
+    let operator = ObjectStore::new(builder)
         .context(error::InitBackendSnafu)?
-        .finish())
+        .finish();
+
+    operator.update_http_client(|_| client);
+    Ok(operator)
 }
