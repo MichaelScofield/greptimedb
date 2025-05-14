@@ -25,10 +25,8 @@ use std::convert::Infallible;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use bytes::Bytes;
-use http_body_util::{BodyExt, Full};
-use tonic::body::BoxBody;
-use tonic::codegen::{empty_body, http, BoxFuture, Service};
+use tonic::body::Body;
+use tonic::codegen::{http, BoxFuture, Service};
 use tonic::server::NamedService;
 
 use crate::metasrv::Metasrv;
@@ -113,8 +111,8 @@ impl NamedService for Admin {
     const NAME: &'static str = "admin";
 }
 
-impl Service<http::Request<BoxBody>> for Admin {
-    type Response = http::Response<BoxBody>;
+impl Service<http::Request<Body>> for Admin {
+    type Response = http::Response<Body>;
     type Error = Infallible;
     type Future = BoxFuture<Self::Response, Self::Error>;
 
@@ -122,7 +120,7 @@ impl Service<http::Request<BoxBody>> for Admin {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: http::Request<BoxBody>) -> Self::Future {
+    fn call(&mut self, req: http::Request<Body>) -> Self::Future {
         let router = self.router.clone();
         let query_params = req
             .uri()
@@ -186,22 +184,22 @@ impl Router {
         path: &str,
         method: http::Method,
         params: HashMap<String, String>,
-    ) -> Result<http::Response<BoxBody>, Infallible> {
+    ) -> Result<http::Response<Body>, Infallible> {
         let handler = match self.handlers.get(path) {
             Some(handler) => handler,
             None => {
                 return Ok(http::Response::builder()
                     .status(http::StatusCode::NOT_FOUND)
-                    .body(empty_body())
+                    .body(Body::empty())
                     .unwrap())
             }
         };
 
         let res = match handler.handle(path, method, &params).await {
-            Ok(res) => res.map(boxed),
+            Ok(res) => res.map(Body::new),
             Err(e) => http::Response::builder()
                 .status(http::StatusCode::INTERNAL_SERVER_ERROR)
-                .body(boxed(e.to_string()))
+                .body(Body::new(e.to_string()))
                 .unwrap(),
         };
 
@@ -213,14 +211,6 @@ fn check_path(path: &str) {
     if path.is_empty() || !path.starts_with('/') {
         panic!("paths must start with a `/`")
     }
-}
-
-/// Returns a [BoxBody] from a string.
-/// The implementation follows [empty_body()].
-fn boxed(body: String) -> BoxBody {
-    Full::new(Bytes::from(body))
-        .map_err(|err| match err {})
-        .boxed_unsync()
 }
 
 #[cfg(test)]

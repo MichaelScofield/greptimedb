@@ -65,28 +65,28 @@ pub fn step_aggr_to_upper_aggr(
             "sum" | "min" | "max" | "last_value" | "first_value" => {
                 // aggr_calc(aggr_merge(input_column))) as col_name
                 let mut new_aggr_func = aggr_func.clone();
-                new_aggr_func.args = vec![input_column.clone()];
+                new_aggr_func.params.args = vec![input_column.clone()];
                 new_aggr_func
             }
             "count" => {
                 // sum(input_column) as col_name
                 let mut new_aggr_func = aggr_func.clone();
                 new_aggr_func.func = sum_udaf();
-                new_aggr_func.args = vec![input_column.clone()];
+                new_aggr_func.params.args = vec![input_column.clone()];
                 new_aggr_func
             }
             UDDSKETCH_STATE_NAME | UDDSKETCH_MERGE_NAME => {
                 // udd_merge(bucket_size, error_rate input_column) as col_name
                 let mut new_aggr_func = aggr_func.clone();
                 new_aggr_func.func = Arc::new(UddSketchState::merge_udf_impl());
-                new_aggr_func.args[2] = input_column.clone();
+                new_aggr_func.params.args[2] = input_column.clone();
                 new_aggr_func
             }
             HLL_NAME | HLL_MERGE_NAME => {
                 // hll_merge(input_column) as col_name
                 let mut new_aggr_func = aggr_func.clone();
                 new_aggr_func.func = Arc::new(HllState::merge_udf_impl());
-                new_aggr_func.args = vec![input_column.clone()];
+                new_aggr_func.params.args = vec![input_column.clone()];
                 new_aggr_func
             }
             _ => {
@@ -169,7 +169,7 @@ pub fn is_all_aggr_exprs_steppable(aggr_exprs: &[Expr]) -> bool {
     ]);
     aggr_exprs.iter().all(|expr| {
         if let Some(aggr_func) = get_aggr_func(expr) {
-            if aggr_func.distinct {
+            if aggr_func.params.distinct {
                 // Distinct aggregate functions are not steppable(yet).
                 return false;
             }
@@ -354,10 +354,11 @@ impl Categorizer {
     }
 
     pub fn check_expr(expr: &Expr) -> Commutativity {
+        #[allow(deprecated)]
         match expr {
             Expr::Column(_)
             | Expr::ScalarVariable(_, _)
-            | Expr::Literal(_)
+            | Expr::Literal(_, _)
             | Expr::BinaryExpr(_)
             | Expr::Not(_)
             | Expr::IsNotNull(_)

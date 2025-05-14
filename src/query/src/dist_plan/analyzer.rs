@@ -80,7 +80,7 @@ impl DistPlannerAnalyzer {
             .collect::<DfResult<Vec<_>>>()?;
 
         // Some plans that are special treated (should not call `with_new_exprs` on them)
-        if !matches!(plan, LogicalPlan::Unnest(_)) {
+        if !matches!(plan, LogicalPlan::Unnest(_) | LogicalPlan::Join(_)) {
             let inputs = plan.inputs().into_iter().cloned().collect::<Vec<_>>();
             Ok(Transformed::yes(plan.with_new_exprs(exprs, inputs)?))
         } else {
@@ -131,6 +131,7 @@ impl DistPlannerAnalyzer {
         Ok(Subquery {
             subquery: Arc::new(rewrote_subquery),
             outer_ref_columns: subquery.outer_ref_columns,
+            spans: Default::default(),
         })
     }
 }

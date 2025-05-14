@@ -26,7 +26,7 @@ use prometheus::{
     register_histogram, register_histogram_vec, register_int_counter, register_int_counter_vec,
     register_int_gauge, Histogram, HistogramVec, IntCounter, IntCounterVec, IntGauge,
 };
-use tonic::body::BoxBody;
+use tonic::body::Body;
 use tower::{Layer, Service};
 
 pub(crate) const METRIC_DB_LABEL: &str = "db";
@@ -306,9 +306,9 @@ pub(crate) struct MetricsMiddleware<S> {
     inner: S,
 }
 
-impl<S> Service<http::Request<BoxBody>> for MetricsMiddleware<S>
+impl<S> Service<http::Request<Body>> for MetricsMiddleware<S>
 where
-    S: Service<http::Request<BoxBody>, Response = http::Response<BoxBody>> + Clone + Send + 'static,
+    S: Service<http::Request<Body>, Response = http::Response<Body>> + Clone + Send + 'static,
     S::Future: Send + 'static,
 {
     type Response = S::Response;
@@ -319,7 +319,7 @@ where
         self.inner.poll_ready(cx)
     }
 
-    fn call(&mut self, req: http::Request<BoxBody>) -> Self::Future {
+    fn call(&mut self, req: http::Request<Body>) -> Self::Future {
         // This is necessary because tonic internally uses `tower::buffer::Buffer`.
         // See https://github.com/tower-rs/tower/issues/547#issuecomment-767629149
         // for details on why this is necessary

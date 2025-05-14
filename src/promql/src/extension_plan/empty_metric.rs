@@ -281,7 +281,9 @@ impl ExecutionPlan for EmptyMetricExec {
 impl DisplayAs for EmptyMetricExec {
     fn fmt_as(&self, t: DisplayFormatType, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match t {
-            DisplayFormatType::Default | DisplayFormatType::Verbose => write!(
+            DisplayFormatType::Default
+            | DisplayFormatType::Verbose
+            | DisplayFormatType::TreeRender => write!(
                 f,
                 "EmptyMetric: range=[{}..{}], interval=[{}]",
                 self.start, self.end, self.interval,
