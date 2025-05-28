@@ -71,7 +71,7 @@ impl ParallelizeScan {
 
                     // assign ranges to each partition
                     let mut partition_ranges =
-                        Self::assign_partition_range(ranges, expected_partition_num);
+                        Self::round_robin_split_ranges(ranges, expected_partition_num);
                     debug!(
                         "Assign {total_range_num} ranges to {expected_partition_num} partitions"
                     );
@@ -109,10 +109,26 @@ impl ParallelizeScan {
         Ok(result)
     }
 
+    fn round_robin_split_ranges(
+        ranges: Vec<PartitionRange>,
+        expected_partition_num: usize,
+    ) -> Vec<Vec<PartitionRange>> {
+        assert!(expected_partition_num > 0);
+        let mut new_ranges = vec![
+            Vec::with_capacity(ranges.len().div_ceil(expected_partition_num));
+            expected_partition_num
+        ];
+        for (i, range) in ranges.into_iter().enumerate() {
+            new_ranges[i % expected_partition_num].push(range);
+        }
+        new_ranges
+    }
+
     /// Distribute [`PartitionRange`]s to each partition.
     ///
     /// Currently we assign ranges to partitions according to their rows so each partition
     /// has similar number of rows. This method always return `expected_partition_num` partitions.
+    #[allow(unused)]
     fn assign_partition_range(
         mut ranges: Vec<PartitionRange>,
         expected_partition_num: usize,
