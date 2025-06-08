@@ -70,7 +70,15 @@ impl DfLogicalPlanner {
 
     #[tracing::instrument(skip_all)]
     async fn plan_sql(&self, stmt: &Statement, query_ctx: QueryContextRef) -> Result<LogicalPlan> {
-        let df_stmt = stmt.try_into().context(SqlSnafu)?;
+        let mut df_stmt = stmt.try_into().context(SqlSnafu)?;
+
+        // TODO(LFC): Remove this when Datafusion supports **both** the syntax and implementation of "explain with format".
+        if let datafusion::sql::parser::Statement::Statement(
+            box datafusion::sql::sqlparser::ast::Statement::Explain { format, .. },
+        ) = &mut df_stmt
+        {
+            format.take();
+        }
 
         let table_provider = DfTableSourceProvider::new(
             self.engine_state.catalog_manager().clone(),

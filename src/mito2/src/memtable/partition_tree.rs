@@ -608,7 +608,7 @@ mod tests {
             let expr = Expr::BinaryExpr(BinaryExpr {
                 left: Box::new(Expr::Column(Column::from_name("k1"))),
                 op: Operator::Eq,
-                right: Box::new(i.lit()),
+                right: Box::new((i as u32).lit()),
             });
             let iter = memtable
                 .iter(None, Some(Predicate::new(vec![expr])), None)

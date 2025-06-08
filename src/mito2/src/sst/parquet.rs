@@ -442,7 +442,7 @@ mod tests {
         let predicate = Some(Predicate::new(vec![Expr::BinaryExpr(BinaryExpr {
             left: Box::new(Expr::Column(Column::from_name("field_0"))),
             op: Operator::GtEq,
-            right: Box::new(150.lit()),
+            right: Box::new(150u64.lit()),
         })]));
 
         let builder = ParquetReaderBuilder::new(FILE_DIR.to_string(), handle.clone(), object_store)

@@ -418,7 +418,7 @@ mod test {
         let expr = Expr::BinaryExpr(BinaryExpr {
             left: Box::new(Expr::Column(Column::from_name("foo"))),
             op: Operator::Eq,
-            right: Box::new(1.lit()),
+            right: Box::new(1i64.lit()),
         });
         let evaluator = SimpleFilterEvaluator::try_new(&expr).unwrap();
 
@@ -440,7 +440,7 @@ mod test {
         let expr = Expr::BinaryExpr(BinaryExpr {
             left: Box::new(Expr::Column(Column::from_name("foo"))),
             op: Operator::Lt,
-            right: Box::new(1.lit()),
+            right: Box::new(1i64.lit()),
         });
         let evaluator = SimpleFilterEvaluator::try_new(&expr).unwrap();
 
