@@ -16,7 +16,7 @@ use datafusion::datasource::DefaultTableSource;
 use datafusion_common::tree_node::{
     Transformed, TransformedResult, TreeNode, TreeNodeRecursion, TreeNodeVisitor,
 };
-use datafusion_common::{Column, Result as DataFusionResult};
+use datafusion_common::{Column, Result as DataFusionResult, ScalarValue};
 use datafusion_expr::expr::{AggregateFunction, WindowFunction};
 use datafusion_expr::utils::COUNT_STAR_EXPANSION;
 use datafusion_expr::{col, lit, Expr, LogicalPlan, WindowFunctionDefinition};
@@ -105,9 +105,14 @@ impl CountWildcardToTimeIndexRule {
 
 /// Utility functions from the original rule.
 impl CountWildcardToTimeIndexRule {
-    #[allow(deprecated)]
-    fn is_wildcard(expr: &Expr) -> bool {
-        matches!(expr, Expr::Wildcard { .. })
+    #[expect(deprecated)]
+    fn args_at_most_wildcard_or_literal_one(args: &[Expr]) -> bool {
+        match args {
+            [] => true,
+            [Expr::Literal(ScalarValue::Int64(Some(v)), _)] => *v == 1,
+            [Expr::Wildcard { .. }] => true,
+            _ => false,
+        }
     }
 
     fn is_count_star_aggregate(aggregate_function: &AggregateFunction) -> bool {
@@ -116,14 +121,14 @@ impl CountWildcardToTimeIndexRule {
             AggregateFunction {
                 func,
                 ..
-            } if func.name() == "count" && (args.len() == 1 && Self::is_wildcard(&args[0]) || args.is_empty()))
+            } if func.name() == "count" && Self::args_at_most_wildcard_or_literal_one(args))
     }
 
     fn is_count_star_window_aggregate(window_function: &WindowFunction) -> bool {
         let args = &window_function.params.args;
         matches!(window_function.fun,
                 WindowFunctionDefinition::AggregateUDF(ref udaf)
-                    if udaf.name() == "count" && (args.len() == 1 && Self::is_wildcard(&args[0]) || args.is_empty()))
+                    if udaf.name() == "count" && Self::args_at_most_wildcard_or_literal_one(args))
     }
 }
 
