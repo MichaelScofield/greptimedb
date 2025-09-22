@@ -154,7 +154,7 @@ jobs:
 
   release-images-to-dockerhub:
     name: Build and push images to DockerHub
-    if: ${{ always() && (needs.build-linux-amd64-artifacts.result == 'success' || needs.build-linux-arm64-artifacts == 'success') }}
+    if: ${{ always() && (needs.build-linux-amd64-artifacts.result == 'success' || needs.build-linux-arm64-artifacts.result == 'success') }}
     needs: [
       allocate-runners,
       build-linux-amd64-artifacts,
